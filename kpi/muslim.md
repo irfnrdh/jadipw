@@ -4,7 +4,7 @@ Berikut **Key Performance Indicators (KPI) sebagai Muslim**
 yang menggabungkan aspek **spiritual, produktivitas duniawi, dan kontribusi sosial**, 
 dengan pendekatan seimbang (_tawazun_) antara dunia dan akhirat:
 
----
+
 
 ### **KPI SPIRITUAL (Hablum minallah)**
 #### **1. Ibadah Wajib**
@@ -21,7 +21,6 @@ dengan pendekatan seimbang (_tawazun_) antara dunia dan akhirat:
 - 🎧 **Podcast/kajian Islam** (minimal 1x/minggu).  
 - 📚 **Buku agama** (minimal 1 bab/minggu).  
 
----
 
 ### **KPI PRODUKTIVITAS DUNIAWI (Hablum minannas)**
 #### **1. Karir & Keuangan Halal**
@@ -39,14 +38,12 @@ dengan pendekatan seimbang (_tawazun_) antara dunia dan akhirat:
 - 🥗 **Makan halal & thayyib** (hindari junk food berlebihan).  
 - 😴 **Tidur cukup** (6-8 jam/hari + tidur siang/Qailulah jika memungkinkan).  
 
----
 
 ### **KPI KONTRIBUSI UMMAT**
 - 🌍 **Bermanfaat untuk orang lain** (1 aksi kecil/hari: nasehat, bantu pekerjaan, senyum).  
 - 📢 **Dakwah digital** (share konten bermanfaat 1x/minggu di media sosial).  
 - 👐 **Volunteering** (ikut kegiatan masjid/komunitas 1x/bulan).  
 
----
 
 ### **METRIK PENGUKURAN**
 1. **Skala Prioritas**:  
@@ -63,7 +60,6 @@ dengan pendekatan seimbang (_tawazun_) antara dunia dan akhirat:
      - _"Apa yang membuat saya lebih dekat dengan Allah minggu ini?"_  
      - _"Apa yang bisa diperbaiki untuk lebih bermanfaat?"_  
 
----
 
 ### **TIPS AGAR KONSISTEN**
 1. **Sistem "Habit Stacking"**:  
@@ -72,8 +68,6 @@ dengan pendekatan seimbang (_tawazun_) antara dunia dan akhirat:
    - Ajak teman/muatan untuk saling mengingatkan target spiritual.  
 3. **Reward System**:  
    - Beri self-reward jika target tercapai (contoh: jalan-jalan setelah khatam Qur’an).  
-
----
 
 > **“Sebaik-baik manusia adalah yang paling bermanfaat bagi orang lain.”** (HR. Ahmad).  
 > **KPI Muslim sejati = Menjadi hamba yang taat + bermanfaat.**  
