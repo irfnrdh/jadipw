@@ -1,232 +1,203 @@
-# Mulai di Sini: Panduan Lengkap Sistem Produktif
+# Mulai di Sini: Belajar Sistem Produktif
 
-> **Produktif = Memanfaatkan Waktu Yang Tersisa dengan Sebaik Mungkin**
+> **Produktif = Menggunakan waktu dengan baik untuk menghasilkan sesuatu yang bermanfaat**
 
-Selamat datang di sistem produktif yang bukan hanya tentang tools, tapi gerakan sosial untuk produktivitas yang berpahala, bermakna, dan berkelanjutan.
-
----
-
-## 🎯 Level 1: Foundation (Minggu 1-2)
-
-### 1.1 Memahami Konsep Dasar
-- [ ] **[Produktif vs Sibuk: Apa Bedanya?](./01-produktif-vs-sibuk.md)**
-  - Definisi produktivitas yang sebenarnya
-  - Mengidentifikasi "busywork" dalam aktivitas harian
-  - Quiz: Apakah aktivitas Anda produktif atau sekadar sibuk?
-
-- [ ] **[Mindset Shift: Execution Beats Ideas](./02-execution-beats-ideas.md)**
-  - Mengapa niat saja tidak cukup
-  - Psychological barrier untuk memulai
-  - Teknik mengatasi analysis paralysis
-
-- [ ] **[Produktivitas yang Berpahala](./03-produktivitas-berpahala.md)**
-  - Menghubungkan produktivitas dengan nilai spiritual
-  - Jadwal sebagai amanah, bukan hak pribadi
-  - Template planning yang bermakna
-
-### 1.2 Audit Diri
-- [ ] **[Diagnostic: Mengapa Produktivitas Anda Stagnan?](./04-diagnostic-produktivitas.md)**
-  - Checklist 7 masalah utama produktivitas
-  - Self-assessment worksheet
-  - Identifikasi pola destruktif personal
-
-- [ ] **[Time & Energy Audit](./05-time-energy-audit.md)**
-  - Template tracking aktivitas 7 hari
-  - Mengidentifikasi peak energy hours
-  - Analisis ROI (Return on Investment) waktu
+Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesional yang ingin lebih produktif.
 
 ---
 
-## ⚡ Level 2: Basic Systems (Minggu 3-4)
+## 🎯 Langkah 1: Pahami Dulu (1-2 hari)
 
-### 2.1 Membangun Habit Dasar
-- [ ] **[2-Minute Rule Implementation](./06-two-minute-rule.md)**
-  - Kapan menggunakan dan tidak menggunakan
-  - 50+ contoh tugas 2-menit di berbagai konteks
-  - Tracking progress dan habit stacking
+### Apa itu Produktif?
+- [ ] **[Produktif vs Sibuk](./01-produktif-vs-sibuk.md)**
+  - Bedanya sibuk dan produktif
+  - Contoh kegiatan yang terlihat sibuk tapi tidak produktif
+  - Quiz sederhana: apakah kamu produktif atau cuma sibuk?
 
-- [ ] **[If-Then Planning Mastery](./07-if-then-planning.md)**
-  - Formula membuat trigger yang efektif
-  - 25+ template If-Then untuk situasi umum
-  - Customization berdasarkan lifestyle
-
-- [ ] **[Single-Task Priority System](./08-single-task-priority.md)**
-  - Teknik menentukan 1 tugas utama harian
-  - Framework evaluasi prioritas (Eisenhower Matrix 2.0)
-  - Dealing with urgent vs important
-
-### 2.2 Environment Setup
-- [ ] **[Distraction-Free Zone Creation](./09-distraction-free-zone.md)**
-  - Physical workspace optimization
-  - Digital environment setup (browser, apps, notifications)
-  - Social boundary management
-
-- [ ] **[Deep Work Protocol](./10-deep-work-protocol.md)**
-  - Time blocking techniques
-  - Focus rituals dan cue stacking
-  - Measuring dan improving focus quality
+- [ ] **[Kenapa Susah Produktif?](./02-masalah-produktivitas.md)**
+  - 7 alasan kenapa produktivitas mandek
+  - Cek: masalah mana yang kamu alami
+  - Solusi sederhana untuk setiap masalah
 
 ---
 
-## 🚀 Level 3: Advanced Techniques (Minggu 5-8)
+## ⚡ Langkah 2: Mulai Praktik (Minggu 1-2)
 
-### 3.1 Advanced Time Management
-- [ ] **[Ultradian Rhythm Optimization](./11-ultradian-rhythm.md)**
-  - 90-menit work cycles vs Pomodoro
-  - Energy management vs time management
-  - Personalized rhythm discovery
+### Kebiasaan Dasar
+- [ ] **[Aturan 2 Menit](./03-aturan-2-menit.md)**
+  - Kalau bisa dikerjakan dalam 2 menit, langsung kerjakan
+  - Contoh tugas 2 menit untuk pelajar/mahasiswa/pekerja
+  - Cara melatih kebiasaan ini
 
-- [ ] **[Batch Processing Mastery](./12-batch-processing.md)**
-  - Task categorization dan grouping
-  - Context switching minimization
-  - Automation opportunities identification
+- [ ] **[Tentukan 1 Tugas Penting](./04-satu-tugas-penting.md)**
+  - Setiap hari, pilih 1 tugas yang paling penting
+  - Cara memilih tugas yang benar-benar penting
+  - Template sederhana untuk planning harian
 
-- [ ] **[Calendar as Operating System](./13-calendar-operating-system.md)**
-  - Advanced time blocking strategies
-  - Buffer time dan contingency planning
-  - Integration dengan life areas
-
-### 3.2 System Integration
-- [ ] **[Multi-Project Management](./14-multi-project-management.md)**
-  - Project switching protocols
-  - Resource allocation across projects
-  - Progress tracking dan milestone management
-
-- [ ] **[Delegation dan Automation Framework](./15-delegation-automation.md)**
-  - Task audit untuk delegation opportunities
-  - Tool evaluation dan implementation
-  - Building support systems
+- [ ] **[Teknik If-Then](./05-if-then.md)**
+  - "Jika [situasi], maka saya akan [aksi]"
+  - Contoh: "Jika buka HP, maka buka catatan tugas dulu"
+  - 20+ contoh If-Then untuk berbagai situasi
 
 ---
 
-## 🎛️ Level 4: System Optimization (Minggu 9-12)
+## 🚀 Langkah 3: Tingkatkan Kemampuan (Minggu 3-4)
 
-### 4.1 Advanced Evaluation
-- [ ] **[Weekly/Monthly Review System](./16-review-system.md)**
-  - Structured reflection templates
-  - Data-driven decision making
-  - Course correction protocols
+### Atur Lingkungan
+- [ ] **[Hilangkan Gangguan](./06-hilangkan-gangguan.md)**
+  - Setup meja belajar/kerja yang fokus
+  - Atur HP dan komputer agar tidak mengganggu
+  - Cara bilang "tidak" pada gangguan dari orang lain
 
-- [ ] **[Productivity Metrics That Matter](./17-productivity-metrics.md)**
-  - Output vs activity metrics
-  - Leading vs lagging indicators
-  - Personal dashboard creation
+- [ ] **[Waktu Fokus](./07-waktu-fokus.md)**
+  - Teknik Pomodoro (25 menit kerja, 5 menit istirahat)
+  - Cara menemukan waktu terbaik untuk fokus
+  - Apa yang dilakukan saat istirahat
 
-- [ ] **[System Resilience Building](./18-system-resilience.md)**
-  - Failure recovery protocols
-  - Stress-testing your system
-  - Contingency planning
-
-### 4.2 Continuous Improvement
-- [ ] **[A/B Testing Your Productivity](./19-ab-testing-productivity.md)**
-  - Experimental approach to optimization
-  - Statistical significance dalam personal productivity
-  - Documentation dan iteration
-
-- [ ] **[Seasonal Productivity Adjustment](./20-seasonal-adjustment.md)**
-  - Adapting system to life changes
-  - Energy cycles sepanjang tahun
-  - Maintenance vs growth phases
+### Kelola Energi
+- [ ] **[Kapan Energi Puncak?](./08-energi-puncak.md)**
+  - Cara tahu kapan energi kamu paling tinggi
+  - Jadwalkan tugas berat di waktu energi puncak
+  - Template tracking energi sederhana
 
 ---
 
-## 🏆 Level 5: Mastery & Leadership (Minggu 13+)
+## 🏆 Langkah 4: Jadi Konsisten (Minggu 5-8)
 
-### 5.1 Advanced Applications
-- [ ] **[Team Productivity Systems](./21-team-productivity.md)**
-  - Scaling personal system ke team
-  - Collaborative workflows
-  - Accountability mechanisms
+### Evaluasi Rutin
+- [ ] **[Review Harian](./09-review-harian.md)**
+  - 3 pertanyaan sederhana setiap malam (5 menit)
+  - Apa yang berhasil? Apa yang gagal? Besok mau fokus apa?
+  - Template review harian
 
-- [ ] **[Creative Productivity](./22-creative-productivity.md)**
-  - Managing creative vs analytical work
-  - Inspiration capture systems
-  - Creative block prevention
+- [ ] **[Review Mingguan](./10-review-mingguan.md)**
+  - Evaluasi seminggu sekali (15 menit)
+  - Apakah progress sesuai target?
+  - Planning minggu depan
 
-- [ ] **[High-Stakes Performance](./23-high-stakes-performance.md)**
-  - Pressure management
-  - Consistency under stress
-  - Peak performance protocols
+### Atasi Masalah
+- [ ] **[Kalau Malas](./11-atasi-malas.md)**
+  - Teknik "mulai 5 menit saja"
+  - Cara bangkit dari hari yang buruk
+  - Sistem backup saat motivasi turun
 
-### 5.2 System Mastery
-- [ ] **[Building Your Personal Operating System](./24-personal-operating-system.md)**
-  - Integration semua systems
-  - Life areas alignment
-  - Long-term sustainability
-
-- [ ] **[Teaching dan Mentoring Productivity](./25-teaching-productivity.md)**
-  - Helping others implement systems
-  - Common implementation pitfalls
-  - Customization untuk different personality types
+- [ ] **[Kalau Terlalu Banyak Tugas](./12-terlalu-banyak-tugas.md)**
+  - Cara prioritas dengan matrix penting-urgent
+  - Teknik mengatakan "tidak" 
+  - Delegasi dan minta bantuan
 
 ---
 
-## 🛠️ Tools & Resources
+## 🎛️ Langkah 5: Untuk yang Sudah Mahir (Minggu 9+)
 
-### Essential Templates
-- [ ] **[Daily Planning Template](./templates/daily-planning.md)**
-- [ ] **[Weekly Review Template](./templates/weekly-review.md)**
-- [ ] **[Project Planning Canvas](./templates/project-canvas.md)**
-- [ ] **[Energy Tracking Sheet](./templates/energy-tracking.md)**
-- [ ] **[Habit Tracker](./templates/habit-tracker.md)**
+### Tingkat Lanjut
+- [ ] **[Kelola Banyak Proyek](./13-banyak-proyek.md)**
+  - System switching antar proyek
+  - Tracking progress multiple goals
+  - Time blocking untuk berbagai area hidup
 
-### Recommended Tools
-- [ ] **[Tool Stack Recommendations](./tools/tool-stack.md)**
-- [ ] **[App Alternatives Comparison](./tools/app-comparison.md)**
-- [ ] **[Setup Guides](./tools/setup-guides.md)**
+- [ ] **[Produktivitas Tim](./14-produktivitas-tim.md)**
+  - Cara kerja produktif dalam grup/tim
+  - Tools kolaborasi yang efektif
+  - Meeting yang produktif
 
-### Troubleshooting
-- [ ] **[Common Problems & Solutions](./troubleshooting/common-problems.md)**
-- [ ] **[Emergency Protocols](./troubleshooting/emergency-protocols.md)**
-- [ ] **[System Recovery Guide](./troubleshooting/system-recovery.md)**
-
----
-
-## 📊 Progress Tracking
-
-### Milestones
-- **Week 2**: Completed foundation audit dan mindset shift
-- **Week 4**: Established 3 core habits (2-min rule, if-then, single priority)
-- **Week 8**: Integrated advanced techniques into daily routine
-- **Week 12**: Built resilient, self-optimizing system
-- **Week 16+**: Mastery level, able to teach others
-
-### Success Metrics
-- Consistency rate (% of days following system)
-- Output quality improvement
-- Stress level reduction
-- Goal achievement rate
-- Time satisfaction score
+- [ ] **[Otomasi dan Tools](./15-otomasi-tools.md)**
+  - Tools gratis yang membantu produktivitas
+  - Cara otomasi tugas berulang
+  - Rekomendasi app berdasarkan kebutuhan
 
 ---
 
-## 🤝 Community & Support
+## 📚 Berdasarkan Kategori
 
-### Getting Help
-- **[FAQ](./support/faq.md)** - Pertanyaan yang sering diajukan
-- **[Community Guidelines](./support/community-guidelines.md)** - Aturan diskusi
-- **[Weekly Office Hours](./support/office-hours.md)** - Sesi tanya jawab
+### Untuk Pelajar SMP/SMA
+- [ ] **[Produktif di Sekolah](./pelajar/produktif-sekolah.md)**
+  - Mengatur jadwal belajar dan PR
+  - Teknik belajar yang efektif
+  - Persiapan ujian tanpa begadang
 
-### Contributing
-- **[How to Contribute](./contributing/how-to-contribute.md)**
-- **[Content Guidelines](./contributing/content-guidelines.md)**
-- **[Improvement Suggestions](./contributing/suggestions.md)**
+- [ ] **[Kelola HP dan Game](./pelajar/kelola-hp-game.md)**
+  - Cara main game tapi tetap produktif
+  - Setting HP untuk belajar
+  - Social media yang sehat
+
+### Untuk Mahasiswa
+- [ ] **[Produktif di Kampus](./mahasiswa/produktif-kampus.md)**
+  - Kuliah, tugas, organisasi, part-time
+  - Teknik riset dan penulisan yang cepat
+  - Networking yang bermanfaat
+
+- [ ] **[Skripsi/Thesis](./mahasiswa/skripsi.md)**
+  - Planning jangka panjang
+  - Mengatasi writer's block
+  - Konsultasi yang efektif dengan dosen
+
+### Untuk Pekerja
+- [ ] **[Produktif di Kantor](./pekerja/produktif-kantor.md)**
+  - Work-life balance
+  - Email dan meeting yang efisien
+  - Career development sambil kerja
+
+- [ ] **[Side Project](./pekerja/side-project.md)**
+  - Kelola waktu untuk proyek sampingan
+  - Skill development after work
+  - Passive income planning
+
+### Untuk Profesional/Entrepreneur
+- [ ] **[Leadership Produktif](./profesional/leadership.md)**
+  - Memimpin tim yang produktif
+  - Decision making yang cepat dan tepat
+  - Strategic thinking
+
+- [ ] **[Scale Business](./profesional/scale-business.md)**
+  - Sistem dan proses bisnis
+  - Delegasi yang efektif
+  - Growth planning
 
 ---
 
-## 🎯 Quick Start (Untuk Yang Tidak Sabar)
+## 🛠️ Tools Sederhana
 
-Jika Anda ingin langsung mulai tanpa membaca semua materi:
+### Template Gratis
+- [ ] **[Daily Planner](./template/daily-planner.md)** - Planning harian 1 halaman
+- [ ] **[Weekly Review](./template/weekly-review.md)** - Evaluasi mingguan 
+- [ ] **[Habit Tracker](./template/habit-tracker.md)** - Tracking kebiasaan
+- [ ] **[Goal Setting](./template/goal-setting.md)** - Set target yang realistis
 
-1. **Hari 1-3**: Baca [Produktif vs Sibuk](./01-produktif-vs-sibuk.md) + [Execution Beats Ideas](./02-execution-beats-ideas.md)
-2. **Hari 4-7**: Implementasi [2-Minute Rule](./06-two-minute-rule.md) + [Single Priority](./08-single-task-priority.md)
-3. **Minggu 2**: Tambahkan [If-Then Planning](./07-if-then-planning.md) + [Deep Work Protocol](./10-deep-work-protocol.md)
-4. **Minggu 3**: Setup [Review System](./16-review-system.md) + evaluasi progress
-
-> **Ingat**: "Productivity is not about doing more. It's about doing what matters — consistently."
+### Rekomendasi App
+- [ ] **[App Gratis](./tools/app-gratis.md)** - Tools produktivitas tanpa bayar
+- [ ] **[Setup HP](./tools/setup-hp.md)** - Setting smartphone untuk produktif
+- [ ] **[Setup Komputer](./tools/setup-komputer.md)** - Optimasi laptop/PC
 
 ---
 
-**Mulai dari yang kecil, konsisten, dan terus iterasi. Sistem ini akan bekerja jika Anda berkomitmen minimal 21 hari berturut-turut.**
+## 🆘 Bantuan Cepat
 
-*Good luck! 🚀*
+### Masalah Umum
+- **Susah mulai**: Baca [Aturan 2 Menit](./03-aturan-2-menit.md)
+- **Mudah terganggu**: Baca [Hilangkan Gangguan](./06-hilangkan-gangguan.md)
+- **Tidak konsisten**: Baca [Atasi Malas](./11-atasi-malas.md)
+- **Terlalu banyak tugas**: Baca [Terlalu Banyak Tugas](./12-terlalu-banyak-tugas.md)
+
+### Quick Start (Untuk yang Buru-buru)
+**Hari 1**: Pilih 1 tugas penting untuk besok
+**Hari 2**: Terapkan aturan 2 menit
+**Hari 3**: Buat 1 If-Then plan
+**Minggu ke-2**: Mulai review harian 5 menit
+**Minggu ke-4**: Evaluasi dan perbaiki sistem
+
+---
+
+## 💬 Komunitas
+
+- **[Tanya Jawab](./support/faq.md)** - Pertanyaan yang sering ditanya
+- **[Sharing Progress](./support/progress.md)** - Cerita sukses dari pengguna lain
+- **[Request Konten](./support/request.md)** - Minta dibuatkan panduan khusus
+
+---
+
+**Ingat**: Mulai yang kecil, konsisten setiap hari, perbaiki sedikit-sedikit.
+
+**Produktif bukan tentang banyak kerja, tapi kerja yang tepat dan bermanfaat.**
+
+*Semangat! 💪*
