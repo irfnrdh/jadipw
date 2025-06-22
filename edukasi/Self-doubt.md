@@ -120,13 +120,3 @@ Kaitan antara **self-doubt** dan **produktivitas** sangat **kuat** — bahkan bi
 > **Self-doubt = rem psikologis**
 > **Produktivitas = mesin eksekusi**
 > Kalau kamu gak sadar sedang menginjak rem, sekeras apa pun kamu injak gas (niat, motivasi, tools produktif), mobilmu tetap lambat.
-
-
-
-Kalau kamu mau, aku bisa bantu buatkan:
-
-* Template refleksi self-doubt
-* Mini journaling harian untuk tracking self-doubt vs tindakan produktif
-* Latihan untuk mengubah self-doubt jadi growth mindset
-
-Mau dicoba salah satu?
