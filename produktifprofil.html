@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Productivity Profiler</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .time-input { width: 80px; display: inline-block; }
+    .energy-bar { height: 24px; transition: width 0.5s ease; }
+    .drag-area { border: 2px dashed #ccc; transition: all 0.3s; }
+    .drag-area.active { border-color: #3b82f6; background-color: #f0f7ff; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="app" class="container mx-auto p-4 max-w-4xl">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">⏳ AI Time Blocking Profiler</h1>
+      <p class="text-gray-600">Isi profil produktivitas Anda untuk generate jadwal optimal</p>
+    </div>
+
+    <form @submit.prevent="generateSchedule" class="space-y-8">
+      <!-- 1. Sleep & Wake Rhythm -->
+      <div class="bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-xl font-bold mb-4 border-b pb-2">😴 Ritme Tidur & Bangun</h2>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <label class="block mb-3">
+              <span class="font-medium">Jam tidur biasa</span>
+              <input type="time" v-model="sleepData.bedtime" class="mt-1 block w-full p-2 border rounded">
+            </label>
+            <label class="block mb-3">
+              <span class="font-medium">Jam bangun biasa</span>
+              <input type="time" v-model="sleepData.wakeup_time" class="mt-1 block w-full p-2 border rounded">
+            </label>
+          </div>
+          <div>
+            <label class="block mb-3">
+              <span class="font-medium">Kualitas tidur (1-10)</span>
+              <input type="range" v-model="sleepData.sleep_quality" min="1" max="10" class="mt-1 block w-full">
+              <div class="flex justify-between text-xs text-gray-500">
+                <span>Buruk</span>
+                <span>Sedang</span>
+                <span>Sangat Baik</span>
+              </div>
+            </label>
+            <label class="flex items-center mt-4">
+              <input type="checkbox" v-model="sleepData.nap_habit" class="mr-2">
+              <span>Punya kebiasaan tidur siang?</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Energy Map -->
+      <div class="bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-xl font-bold mb-4 border-b pb-2">⚡ Peta Energi Harian</h2>
+        <p class="mb-4 text-gray-600">Beri nilai energi Anda di waktu-waktu berikut (1-10):</p>
+        
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div v-for="(slot, idx) in energySlots" :key="idx" class="p-3 border rounded-lg">
+            <label class="block mb-2 font-medium">{{ slot.label }}</label>
+            <input type="range" v-model="energyMap[slot.key]" min="1" max="10" class="w-full mb-2">
+            <div class="flex items-center">
+              <div class="energy-bar bg-blue-500 rounded" 
+                   :style="{width: (energyMap[slot.key]*10)+'%'}"></div>
+              <span class="ml-2 text-sm font-medium">{{ energyMap[slot.key] }}/10</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Focus Patterns -->
+      <div class="bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-xl font-bold mb-4 border-b pb-2">🎯 Pola Fokus</h2>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <label class="block mb-3">
+              <span class="font-medium">Durasi fokus optimal (menit)</span>
+              <input type="number" v-model="focusData.optimal_duration" min="15" max="120" class="mt-1 block w-full p-2 border rounded">
+            </label>
+            
+            <label class="block mb-3">
+              <span class="font-medium">Durasi istirahat ideal (menit)</span>
+              <input type="number" v-model="focusData.break_duration" min="5" max="30" class="mt-1 block w-full p-2 border rounded">
+            </label>
+          </div>
+          
+          <div>
+            <label class="block mb-3">
+              <span class="font-medium">Metode produktivitas favorit</span>
+              <select v-model="focusData.method" class="mt-1 block w-full p-2 border rounded">
+                <option value="pomodoro">Pomodoro</option>
+                <option value="timeblocking">Time Blocking</option>
+                <option value="deepwork">Deep Work</option>
+                <option value="flowtime">Flowtime</option>
+              </select>
+            </label>
+            
+            <label class="block mb-3">
+              <span class="font-medium">Frekuensi istirahat panjang (setiap ... sesi)</span>
+              <input type="number" v-model="focusData.long_break_freq" min="2" max="8" class="mt-1 block w-full p-2 border rounded">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Distraction Profile -->
+      <div class="bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-xl font-bold mb-4 border-b pb-2">📵 Profil Distraksi</h2>
+        
+        <div class="mb-6">
+          <p class="font-medium mb-2">Sumber distraksi utama (Pilih 3 terbesar):</p>
+          <div class="flex flex-wrap gap-2">
+            <label v-for="item in distractionOptions" :key="item" class="flex items-center px-3 py-1 bg-gray-100 rounded-full">
+              <input type="checkbox" v-model="distractionData.sources" :value="item" class="mr-2">
+              <span>{{ item }}</span>
+            </label>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block mb-3">
+            <span class="font-medium">Strategi penanganan distraksi</span>
+            <textarea v-model="distractionData.strategy" rows="3" class="mt-1 block w-full p-2 border rounded" placeholder="Contoh: Matikan notifikasi, pakai mode pesawat..."></textarea>
+          </label>
+        </div>
+      </div>
+
+      <!-- 5. Task Priority Matrix -->
+      <div class="bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-xl font-bold mb-4 border-b pb-2">📊 Matriks Prioritas</h2>
+        
+        <div class="mb-4">
+          <p class="font-medium mb-2">Drag & drop untuk mengurutkan prioritas:</p>
+          <div 
+            class="drag-area p-4 rounded-lg"
+            @dragover.prevent="dragOver"
+            @dragleave="dragLeave"
+            @drop="drop"
+            :class="{ 'active': isDragging }"
+          >
+            <div 
+              v-for="(item, index) in priorityMatrix" 
+              :key="item"
+              draggable="true"
+              @dragstart="dragStart(index)"
+              @dragend="isDragging = false"
+              class="px-4 py-2 mb-2 bg-blue-50 rounded cursor-move"
+            >
+              {{ index+1 }}. {{ item }}
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block mb-3">
+            <span class="font-medium">Kriteria tugas "Penting":</span>
+            <input v-model="priorityData.important_criteria" type="text" class="mt-1 block w-full p-2 border rounded" placeholder="Contoh: Deadline <3 hari, impact tinggi">
+          </label>
+        </div>
+      </div>
+
+      <!-- 6. Tools & Environment -->
+      <div class="bg-white p-6 rounded-xl shadow-md">
+        <h2 class="text-xl font-bold mb-4 border-b pb-2">🛠️ Tools & Lingkungan</h2>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <label class="block mb-3">
+              <span class="font-medium">Aplikasi produktivitas utama</span>
+              <input 
+                v-model="toolsData.main_apps" 
+                type="text" 
+                class="mt-1 block w-full p-2 border rounded"
+                placeholder="Contoh: Notion, Google Calendar, Todoist"
+              >
+            </label>
+            
+            <label class="block mb-3">
+              <span class="font-medium">Device utama untuk kerja</span>
+              <select v-model="toolsData.primary_device" class="mt-1 block w-full p-2 border rounded">
+                <option value="laptop">Laptop</option>
+                <option value="desktop">Desktop PC</option>
+                <option value="tablet">Tablet</option>
+                <option value="hybrid">Hybrid (Multiple Devices)</option>
+              </select>
+            </label>
+          </div>
+          
+          <div>
+            <label class="block mb-3">
+              <span class="font-medium">Lingkungan kerja ideal</span>
+              <select v-model="toolsData.ideal_environment" class="mt-1 block w-full p-2 border rounded">
+                <option value="quiet">Sepenuhnya Sunyi</option>
+                <option value="background_noise">Ada Background Noise</option>
+                <option value="music">Dengan Musik</option>
+                <option value="coworking">Co-working Space</option>
+              </select>
+            </label>
+            
+            <label class="block mb-3">
+              <span class="font-medium">Alat bantu fokus</span>
+              <input 
+                v-model="toolsData.focus_tools" 
+                type="text" 
+                class="mt-1 block w-full p-2 border rounded"
+                placeholder="Contoh: Noise-cancelling headphone, white noise app"
+              >
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="text-center">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition">
+          🚀 Generate My Time Blocking Plan
+        </button>
+      </div>
+    </form>
+
+    <!-- Results -->
+    <div v-if="scheduleResult" class="mt-12 bg-white p-6 rounded-xl shadow-md">
+      <h2 class="text-2xl font-bold mb-4 border-b pb-2">📅 Rencana Time Blocking Anda</h2>
+      
+      <div class="mb-6 grid md:grid-cols-3 gap-4">
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <div class="text-xl font-bold text-blue-600">{{ sleepScore }}/10</div>
+          <div class="text-blue-800">Sleep Quality Score</div>
+        </div>
+        <div class="bg-green-50 p-4 rounded-lg">
+          <div class="text-xl font-bold text-green-600">{{ focusScore }}/10</div>
+          <div class="text-green-800">Focus Potential Score</div>
+        </div>
+        <div class="bg-purple-50 p-4 rounded-lg">
+          <div class="text-xl font-bold text-purple-600">{{ productivityScore }}/100</div>
+          <div class="text-purple-800">Productivity Index</div>
+        </div>
+      </div>
+      
+      <div class="bg-gray-50 p-4 rounded-lg mb-4">
+        <h3 class="font-bold mb-2">📌 Rekomendasi Utama:</h3>
+        <ul class="list-disc pl-5 space-y-1">
+          <li v-for="(tip, idx) in productivityTips" :key="idx">{{ tip }}</li>
+        </ul>
+      </div>
+      
+      <div class="mb-6">
+        <h3 class="font-bold mb-2">⏳ Jadwal Time Blocking Optimal:</h3>
+        <div class="border rounded-lg overflow-hidden">
+          <div v-for="(block, idx) in timeBlocks" :key="idx" class="border-b last:border-b-0">
+            <div class="flex items-center p-3" :class="getBlockColor(block.type)">
+              <div class="font-medium w-24">{{ block.time }}</div>
+              <div class="flex-1">{{ block.activity }}</div>
+              <div class="text-sm text-gray-600">{{ block.duration }} menit</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-center">
+        <button @click="downloadICS" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition mr-2">
+          📥 Download Calendar (.ics)
+        </button>
+        <button @click="copyResult" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition">
+          📋 Copy Schedule
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, reactive } = Vue;
+    
+    createApp({
+      setup() {
+        // Form Data
+        const sleepData = reactive({
+          bedtime: "23:00",
+          wakeup_time: "06:30",
+          sleep_quality: 7,
+          nap_habit: false
+        });
+        
+        const energyMap = reactive({
+          morning: 8,
+          midday: 5,
+          afternoon: 6,
+          evening: 4,
+          night: 3
+        });
+        
+        const focusData = reactive({
+          optimal_duration: 45,
+          break_duration: 10,
+          method: "pomodoro",
+          long_break_freq: 4
+        });
+        
+        const distractionData = reactive({
+          sources: ["Social Media", "Email", "Colleagues"],
+          strategy: "Pakai mode fokus di HP, blokir situs mengganggu selama jam kerja"
+        });
+        
+        const priorityMatrix = reactive([
+          "Tugas Deadline Ketat",
+          "Proyek Jangka Panjang",
+          "Belajar Skill Baru",
+          "Olahraga/Kesehatan",
+          "Social/Networking"
+        ]);
+        
+        const priorityData = reactive({
+          important_criteria: "Dampak tinggi ke goals utama"
+        });
+        
+        const toolsData = reactive({
+          main_apps: "Notion, Google Calendar",
+          primary_device: "laptop",
+          ideal_environment: "quiet",
+          focus_tools: "Noise-cancelling headphones"
+        });
+        
+        // UI Helpers
+        const energySlots = [
+          { label: "Pagi (6-9 AM)", key: "morning" },
+          { label: "Siang (10-1 PM)", key: "midday" },
+          { label: "Sore (2-5 PM)", key: "afternoon" },
+          { label: "Malam (6-9 PM)", key: "evening" },
+          { label: "Larut Malam (10 PM+)", key: "night" }
+        ];
+        
+        const distractionOptions = [
+          "Social Media", "Email", "Colleagues", 
+          "Meetings", "Multitasking", "Household Chores",
+          "News", "Entertainment", "Overthinking"
+        ];
+        
+        // Drag & Drop
+        const isDragging = ref(false);
+        const draggedIndex = ref(null);
+        
+        const dragStart = (index) => {
+          draggedIndex.value = index;
+          isDragging.value = true;
+        };
+        
+        const dragOver = () => {
+          isDragging.value = true;
+        };
+        
+        const dragLeave = () => {
+          isDragging.value = false;
+        };
+        
+        const drop = (e) => {
+          isDragging.value = false;
+          const dropIndex = Array.from(e.target.children).indexOf(e.target);
+          if (draggedIndex.value !== null && dropIndex !== -1) {
+            const item = priorityMatrix.splice(draggedIndex.value, 1)[0];
+            priorityMatrix.splice(dropIndex, 0, item);
+          }
+        };
+        
+        // Results
+        const scheduleResult = ref("");
+        const timeBlocks = ref([]);
+        const productivityTips = ref([]);
+        
+        // Computed Scores
+        const sleepScore = computed(() => {
+          const quality = sleepData.sleep_quality;
+          const duration = (new Date(`2000-01-01 ${sleepData.wakeup_time}`) - 
+                          new Date(`2000-01-01 ${sleepData.bedtime}`)) / (1000 * 60 * 60);
+          return Math.min(10, Math.round(quality * (duration >= 7 ? 1.2 : 0.9)));
+        });
+        
+        const focusScore = computed(() => {
+          const avgEnergy = (energyMap.morning + energyMap.afternoon) / 2;
+          const focusDurationScore = focusData.optimal_duration / 6;
+          return Math.min(10, Math.round((avgEnergy + focusDurationScore) / 2));
+        });
+        
+        const productivityScore = computed(() => {
+          return Math.min(100, 
+            (sleepScore.value * 3) + 
+            (focusScore.value * 4) + 
+            (distractionData.sources.length < 3 ? 15 : 5) +
+            (priorityMatrix[0].includes("Tugas") ? 10 : 5)
+          );
+        });
+        
+        // Methods
+        const generateSchedule = () => {
+          // Generate time blocks based on profile
+          const blocks = [];
+          const wakeup = new Date(`2000-01-01 ${sleepData.wakeup_time}`);
+          
+          // Morning Routine
+          blocks.push({
+            time: formatTime(wakeup),
+            activity: "Morning Routine (Exercise, Breakfast, Planning)",
+            duration: 60,
+            type: "routine"
+          });
+          
+          // Focus Blocks
+          const focusHours = energyMap.morning > 7 ? 3 : 2;
+          for (let i = 0; i < focusHours; i++) {
+            wakeup.setMinutes(wakeup.getMinutes() + (i === 0 ? 60 : focusData.optimal_duration));
+            blocks.push({
+              time: formatTime(wakeup),
+              activity: `Deep Work Session ${i+1}`,
+              duration: focusData.optimal_duration,
+              type: "focus"
+            });
+            
+            if (i < focusHours - 1) {
+              wakeup.setMinutes(wakeup.getMinutes() + focusData.break_duration);
+              blocks.push({
+                time: formatTime(wakeup),
+                activity: "Short Break",
+                duration: focusData.break_duration,
+                type: "break"
+              });
+            }
+          }
+          
+          // Lunch Break
+          wakeup.setMinutes(wakeup.getMinutes() + 30);
+          blocks.push({
+            time: formatTime(wakeup),
+            activity: "Lunch Break",
+            duration: 45,
+            type: "meal"
+          });
+          
+          // Afternoon Session
+          if (energyMap.afternoon > 5) {
+            wakeup.setMinutes(wakeup.getMinutes() + 15);
+            blocks.push({
+              time: formatTime(wakeup),
+              activity: "Admin Tasks & Meetings",
+              duration: 90,
+              type: "admin"
+            });
+          }
+          
+          // Evening
+          wakeup.setHours(18, 0, 0);
+          blocks.push({
+            time: formatTime(wakeup),
+            activity: "Personal Time / Learning",
+            duration: 90,
+            type: "personal"
+          });
+          
+          // Dinner
+          wakeup.setHours(19, 30, 0);
+          blocks.push({
+            time: formatTime(wakeup),
+            activity: "Dinner & Relaxation",
+            duration: 60,
+            type: "meal"
+          });
+          
+          // Wind Down
+          wakeup.setHours(21, 0, 0);
+          blocks.push({
+            time: formatTime(wakeup),
+            activity: "Wind Down Routine",
+            duration: 60,
+            type: "routine"
+          });
+          
+          timeBlocks.value = blocks;
+          
+          // Generate tips
+          productivityTips.value = [
+            `Gunakan ${focusData.method} method untuk sesi fokus Anda`,
+            energyMap.morning > 7 ? "Manfaatkan energi pagi untuk tugas tersulit" : "Jadwalkan tugas berat saat energi sedang tinggi",
+            distractionData.sources.length > 0 ? `Minimalkan distraksi dari ${distractionData.sources.join(", ")}` : "",
+            `Prioritaskan: ${priorityMatrix.slice(0, 2).join(" dan ")}`
+          ].filter(tip => tip !== "");
+          
+          scheduleResult.value = "Generated at " + new Date().toLocaleString();
+        };
+        
+        const formatTime = (date) => {
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        };
+        
+        const getBlockColor = (type) => {
+          const colors = {
+            focus: "bg-blue-50",
+            break: "bg-green-50",
+            routine: "bg-purple-50",
+            meal: "bg-yellow-50",
+            admin: "bg-gray-50",
+            personal: "bg-pink-50"
+          };
+          return colors[type] || "bg-white";
+        };
+        
+        const copyResult = () => {
+          const text = `Produktivitas Saya:\n\n` +
+                      `🏆 Productivity Index: ${productivityScore.value}/100\n\n` +
+                      `⏰ Jadwal Optimal:\n${timeBlocks.value.map(b => `${b.time} - ${b.activity} (${b.duration}m)`).join("\n")}\n\n` +
+                      `💡 Tips:\n${productivityTips.value.join("\n")}`;
+          
+          navigator.clipboard.writeText(text).then(() => {
+            alert("Jadwal berhasil disalin!");
+          });
+        };
+        
+        const downloadICS = () => {
+          alert("Fitur download ICS akan diimplementasi di versi berikutnya");
+          // Actual ICS generation would go here
+        };
+        
+        return {
+          // Data
+          sleepData,
+          energyMap,
+          focusData,
+          distractionData,
+          priorityMatrix,
+          priorityData,
+          toolsData,
+          
+          // UI
+          energySlots,
+          distractionOptions,
+          isDragging,
+          
+          // Methods
+          dragStart,
+          dragOver,
+          dragLeave,
+          drop,
+          generateSchedule,
+          copyResult,
+          downloadICS,
+          getBlockColor,
+          
+          // Results
+          scheduleResult,
+          timeBlocks,
+          productivityTips,
+          sleepScore,
+          focusScore,
+          productivityScore
+        };
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>
