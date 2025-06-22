@@ -2,7 +2,7 @@
 
 > **"Sibuk bukan berarti produktif. Produktif berarti menghasilkan sesuatu yang bermanfaat."**
 
----
+
 
 ## 🤔 Apa Sih Bedanya?
 
@@ -20,7 +20,7 @@
 - Hasil kerjanya berdampak
 - Tenang dan terkontrol
 
----
+
 
 ## 📊 Contoh Nyata dalam Kehidupan
 
@@ -72,7 +72,7 @@
 - Kerja efisien → pulang tepat waktu → fresh besoknya
 - Pilih 1-2 ide terbaik, eksekusi sampai tuntas
 
----
+
 
 ## 🚨 Tanda-tanda Kamu SIBUK tapi Tidak Produktif
 
@@ -88,7 +88,7 @@
 
 **Kalau kamu centang lebih dari 4, kemungkinan kamu sibuk tapi tidak produktif.**
 
----
+
 
 ## ✅ Cara Berubah dari Sibuk jadi Produktif
 
@@ -125,7 +125,7 @@ Setelah 1 minggu, kelompokkan:
 - Bukan: "Aku udah belajar 5 jam"
 - Tapi: "Aku udah paham cara ngerjain 10 soal integral"
 
----
+
 
 ## 🎯 Challenge 7 Hari: Produktif vs Sibuk
 
@@ -146,7 +146,7 @@ Bandingkan hari 1-3 vs hari 4-7:
 - Mana yang lebih puas dengan hasilnya?
 - Apa yang berubah?
 
----
+
 
 ## 💡 Tips Praktis Sehari-hari
 
@@ -171,7 +171,7 @@ Bandingkan hari 1-3 vs hari 4-7:
 - Meeting harus ada agenda dan time limit
 - Delegasikan tugas yang bisa dikerjakan orang lain
 
----
+
 
 ## 🏆 Kesimpulan
 
@@ -188,7 +188,7 @@ Bandingkan hari 1-3 vs hari 4-7:
 
 **Ingat:** Lebih baik 2 jam produktif daripada 8 jam sibuk tanpa hasil.
 
----
+
 
 **Next:** Baca [Kenapa Susah Produktif?](./02-masalah-produktivitas.md) untuk tahu akar masalah dan solusinya.
 
