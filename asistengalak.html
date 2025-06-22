@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asisten Galak - Alarm Produktivitas</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .task-card {
+      transition: all 0.3s ease;
+    }
+    .task-card:hover {
+      transform: translateY(-2px);
+    }
+    .priority-high { border-left: 4px solid #ef4444; background-color: #fef2f2; }
+    .priority-medium { border-left: 4px solid #f59e0b; background-color: #fffbeb; }
+    .priority-low { border-left: 4px solid #10b981; background-color: #ecfdf5; }
+    .strict-mode {
+      background-color: #fee2e2;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { background-color: #fee2e2; }
+      50% { background-color: #fecaca; }
+      100% { background-color: #fee2e2; }
+    }
+    .alarm-active {
+      background-color: #3b82f6;
+      color: white;
+      animation: ring 1s infinite;
+    }
+    @keyframes ring {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(5deg); }
+      50% { transform: rotate(0deg); }
+      75% { transform: rotate(-5deg); }
+      100% { transform: rotate(0deg); }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div id="app" class="container mx-auto p-4 max-w-3xl">
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">⏰ Asisten Galak</h1>
+      <p class="text-gray-600">Aku akan membangunkanmu dan memastikan kamu melakukan tugasmu!</p>
+    </header>
+
+    <!-- Main App -->
+    <div :class="{'strict-mode': strictMode}" class="rounded-xl shadow-md p-6 mb-6">
+      <!-- Mode Toggle -->
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex gap-2">
+          <button 
+            @click="strictMode = !strictMode" 
+            :class="{'bg-red-600 text-white': strictMode, 'bg-gray-200': !strictMode}"
+            class="px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            <span v-if="strictMode">😠 Mode Galak AKTIF</span>
+            <span v-else>😊 Mode Santai</span>
+          </button>
+          <button 
+            @click="showAlarmModal = true"
+            class="px-4 py-2 rounded-lg bg-blue-100 text-blue-800 flex items-center gap-2"
+          >
+            ⏰ Atur Alarm
+          </button>
+        </div>
+        <div class="text-sm text-gray-500">
+          {{ currentTime }}
+        </div>
+      </div>
+
+      <!-- Alarm Modal -->
+      <div v-if="showAlarmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg max-w-md w-full">
+          <h2 class="text-xl font-bold mb-4">⏰ Atur Alarm Pengingat</h2>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block mb-2">Pilih Tugas:</label>
+              <select v-model="newAlarm.taskId" class="w-full p-2 border rounded">
+                <option value="">-- Pilih Tugas --</option>
+                <option v-for="task in uncompletedTasks" :value="task.id" :key="task.id">
+                  {{ task.text }}
+                </option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block mb-2">Waktu Alarm:</label>
+              <input v-model="newAlarm.time" type="time" class="w-full p-2 border rounded">
+            </div>
+            
+            <div>
+              <label class="flex items-center">
+                <input v-model="newAlarm.strict" type="checkbox" class="mr-2">
+                <span>Mode Galak (akan terus mengingatkan sampai selesai)</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2 mt-6">
+            <button @click="showAlarmModal = false" class="px-4 py-2 border rounded">
+              Batal
+            </button>
+            <button @click="addAlarm" class="px-4 py-2 bg-blue-600 text-white rounded">
+              Simpan Alarm
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Alarm Notification -->
+      <div v-if="activeAlarm" class="mb-4 p-4 rounded-lg bg-red-100 border border-red-300 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🔔</span>
+          <div>
+            <div class="font-bold">WAKTU UNTUK:</div>
+            <div>{{ getTaskText(activeAlarm.taskId) }}</div>
+          </div>
+        </div>
+        <div>
+          <button 
+            @click="completeAlarmTask"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg mr-2"
+          >
+            Sudah Selesai
+          </button>
+          <button 
+            @click="snoozeAlarm"
+            class="px-4 py-2 bg-yellow-500 text-white rounded-lg"
+          >
+            Tunda 5 Menit
+          </button>
+        </div>
+      </div>
+
+      <!-- Task Input -->
+      <div class="mb-6">
+        <h2 class="text-xl font-bold mb-3 border-b pb-2">➕ Tambahkan Tugas</h2>
+        <div class="flex gap-2 mb-3">
+          <input 
+            v-model="newTask.text" 
+            type="text" 
+            placeholder="Apa yang harus dilakukan?" 
+            class="flex-1 p-2 border rounded"
+          >
+          <select v-model="newTask.priority" class="p-2 border rounded">
+            <option value="high">Penting!</option>
+            <option value="medium">Biasa</option>
+            <option value="low">Nanti saja</option>
+          </select>
+          <button 
+            @click="addTask" 
+            class="bg-blue-500 text-white px-4 rounded"
+          >
+            Tambah
+          </button>
+        </div>
+      </div>
+
+      <!-- Task List -->
+      <div>
+        <h2 class="text-xl font-bold mb-3 border-b pb-2">📝 Daftar Tugas</h2>
+        
+        <div v-if="tasks.length === 0" class="text-center py-8 text-gray-500">
+          Belum ada tugas. Tambahkan tugas yang perlu kamu lakukan.
+        </div>
+        
+        <div v-else class="space-y-3">
+          <div 
+            v-for="task in sortedTasks" 
+            :key="task.id"
+            :class="`priority-${task.priority}`"
+            class="task-card p-3 rounded-lg border shadow-sm flex items-start"
+          >
+            <input 
+              type="checkbox" 
+              v-model="task.completed"
+              @change="completeTask(task)"
+              class="mt-1 mr-2"
+            >
+            <div class="flex-1">
+              <div :class="{'line-through text-gray-400': task.completed}">
+                {{ task.text }}
+                <span v-if="hasAlarm(task.id)" class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">
+                  ⏰ {{ getAlarmTime(task.id) }}
+                </span>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">
+                Ditambahkan: {{ formatDate(task.addedAt) }}
+                <span v-if="task.completedAt"> | Selesai: {{ formatDate(task.completedAt) }}</span>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button 
+                @click.stop="showAlarmModal = true; newAlarm.taskId = task.id"
+                class="text-blue-500 text-sm p-1"
+                title="Atur alarm"
+              >
+                ⏰
+              </button>
+              <button 
+                @click.stop="removeTask(task.id)"
+                class="text-red-500 p-1"
+                title="Hapus"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alarm List -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <h2 class="text-xl font-bold mb-3 border-b pb-2">🔔 Alarm Aktif</h2>
+      
+      <div v-if="alarms.length === 0" class="text-center py-4 text-gray-500">
+        Belum ada alarm yang diatur
+      </div>
+      
+      <div v-else class="space-y-2">
+        <div 
+          v-for="alarm in alarms" 
+          :key="alarm.id"
+          class="p-3 border rounded-lg flex justify-between items-center"
+        >
+          <div>
+            <div class="font-medium">{{ getTaskText(alarm.taskId) }}</div>
+            <div class="text-sm text-gray-500">
+              Setiap hari jam {{ alarm.time }} 
+              <span v-if="alarm.strict" class="text-red-500">(Mode Galak)</span>
+            </div>
+          </div>
+          <button 
+            @click="removeAlarm(alarm.id)"
+            class="text-red-500 p-1"
+            title="Hapus alarm"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strict Mode Warning -->
+    <div v-if="strictMode" class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+      <div class="flex items-start gap-3">
+        <div class="text-2xl">😠</div>
+        <div>
+          <h3 class="font-bold text-red-800">PERHATIAN! MODE GALAK AKTIF</h3>
+          <p class="text-red-700">Aku akan mengganggumu terus sampai kamu menyelesaikan tugas pentingmu!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <audio ref="alarmSound" loop>
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+
+    createApp({
+      setup() {
+        // App State
+        const strictMode = ref(false);
+        const showAlarmModal = ref(false);
+        const activeAlarm = ref(null);
+        const alarmSound = ref(null);
+        const currentTime = ref(getCurrentTimeString());
+        
+        // Data
+        const newTask = reactive({
+          text: '',
+          priority: 'medium'
+        });
+        
+        const newAlarm = reactive({
+          taskId: '',
+          time: '',
+          strict: false
+        });
+        
+        const tasks = ref([]);
+        const alarms = ref([]);
+        
+        // Computed
+        const uncompletedTasks = computed(() => {
+          return tasks.value.filter(task => !task.completed);
+        });
+        
+        const sortedTasks = computed(() => {
+          return [...tasks.value].sort((a, b) => {
+            // Sort by priority first
+            const priorityOrder = { high: 1, medium: 2, low: 3 };
+            if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+              return priorityOrder[a.priority] - priorityOrder[b.priority];
+            }
+            // Then by added time
+            return new Date(a.addedAt) - new Date(b.addedAt);
+          });
+        });
+        
+        // Methods
+        function getCurrentTimeString() {
+          const now = new Date();
+          return now.toLocaleTimeString('id-ID', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+          });
+        }
+        
+        function generateId() {
+          return Date.now().toString(36) + Math.random().toString(36).substring(2);
+        }
+        
+        function formatDate(dateString) {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
+        
+        function getTaskText(taskId) {
+          const task = tasks.value.find(t => t.id === taskId);
+          return task ? task.text : 'Tugas tidak ditemukan';
+        }
+        
+        function getAlarmTime(taskId) {
+          const alarm = alarms.value.find(a => a.taskId === taskId);
+          return alarm ? alarm.time : '';
+        }
+        
+        function hasAlarm(taskId) {
+          return alarms.value.some(a => a.taskId === taskId);
+        }
+        
+        function addTask() {
+          if (newTask.text.trim()) {
+            tasks.value.push({
+              id: generateId(),
+              text: newTask.text.trim(),
+              priority: newTask.priority,
+              completed: false,
+              addedAt: new Date(),
+              completedAt: null
+            });
+            newTask.text = '';
+            saveData();
+          }
+        }
+        
+        function removeTask(taskId) {
+          tasks.value = tasks.value.filter(task => task.id !== taskId);
+          // Remove any alarms for this task
+          alarms.value = alarms.value.filter(alarm => alarm.taskId !== taskId);
+          saveData();
+        }
+        
+        function completeTask(task) {
+          if (task.completed) {
+            task.completedAt = new Date();
+            // If this was the active alarm task, clear it
+            if (activeAlarm.value && activeAlarm.value.taskId === task.id) {
+              stopAlarm();
+            }
+          } else {
+            task.completedAt = null;
+          }
+          saveData();
+        }
+        
+        function addAlarm() {
+          if (newAlarm.taskId && newAlarm.time) {
+            alarms.value.push({
+              id: generateId(),
+              taskId: newAlarm.taskId,
+              time: newAlarm.time,
+              strict: newAlarm.strict
+            });
+            newAlarm.taskId = '';
+            newAlarm.time = '';
+            newAlarm.strict = false;
+            showAlarmModal.value = false;
+            saveData();
+          }
+        }
+        
+        function removeAlarm(alarmId) {
+          alarms.value = alarms.value.filter(alarm => alarm.id !== alarmId);
+          saveData();
+        }
+        
+        function checkAlarms() {
+          const now = new Date();
+          const currentHours = now.getHours().toString().padStart(2, '0');
+          const currentMinutes = now.getMinutes().toString().padStart(2, '0');
+          const currentTimeString = `${currentHours}:${currentMinutes}`;
+          
+          // Check if any alarm should trigger
+          for (const alarm of alarms.value) {
+            if (alarm.time === currentTimeString) {
+              const task = tasks.value.find(t => t.id === alarm.taskId);
+              
+              // Only trigger if task exists and isn't completed
+              if (task && !task.completed) {
+                // Don't trigger if already active
+                if (!activeAlarm.value || activeAlarm.value.id !== alarm.id) {
+                  triggerAlarm(alarm);
+                  break; // Only trigger one alarm at a time
+                }
+              }
+            }
+          }
+        }
+        
+        function triggerAlarm(alarm) {
+          activeAlarm.value = { ...alarm };
+          
+          // Play sound
+          if (alarmSound.value) {
+            alarmSound.value.play().catch(e => console.log("Autoplay prevented:", e));
+          }
+          
+          // Show browser notification if available
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(`Waktunya untuk: ${getTaskText(alarm.taskId)}`, {
+              body: alarm.strict ? 'Aku tidak akan diam sampai kamu selesai!' : 'Jangan lupa lakukan ini sekarang',
+              icon: 'https://emojicdn.elk.sh/⏰'
+            });
+          }
+          
+          // If strict mode, keep reminding every minute
+          if (alarm.strict) {
+            strictMode.value = true;
+          }
+        }
+        
+        function stopAlarm() {
+          if (alarmSound.value) {
+            alarmSound.value.pause();
+            alarmSound.value.currentTime = 0;
+          }
+          activeAlarm.value = null;
+        }
+        
+        function completeAlarmTask() {
+          if (activeAlarm.value) {
+            const task = tasks.value.find(t => t.id === activeAlarm.value.taskId);
+            if (task) {
+              task.completed = true;
+              task.completedAt = new Date();
+              saveData();
+            }
+            stopAlarm();
+          }
+        }
+        
+        function snoozeAlarm() {
+          if (activeAlarm.value) {
+            stopAlarm();
+            // Set the alarm time to 5 minutes later
+            const [hours, minutes] = activeAlarm.value.time.split(':');
+            const alarmDate = new Date();
+            alarmDate.setHours(parseInt(hours));
+            alarmDate.setMinutes(parseInt(minutes) + 5);
+            
+            const newHours = alarmDate.getHours().toString().padStart(2, '0');
+            const newMinutes = alarmDate.getMinutes().toString().padStart(2, '0');
+            
+            // Create a temporary one-time alarm
+            const tempAlarm = {
+              id: generateId(),
+              taskId: activeAlarm.value.taskId,
+              time: `${newHours}:${newMinutes}`,
+              strict: activeAlarm.value.strict,
+              isSnooze: true
+            };
+            
+            alarms.value.push(tempAlarm);
+            saveData();
+          }
+        }
+        
+        function saveData() {
+          localStorage.setItem('strictAssistantTasks', JSON.stringify(tasks.value));
+          localStorage.setItem('strictAssistantAlarms', JSON.stringify(alarms.value));
+          localStorage.setItem('strictAssistantStrictMode', strictMode.value);
+        }
+        
+        function loadData() {
+          const savedTasks = localStorage.getItem('strictAssistantTasks');
+          const savedAlarms = localStorage.getItem('strictAssistantAlarms');
+          const savedStrictMode = localStorage.getItem('strictAssistantStrictMode');
+          
+          if (savedTasks) tasks.value = JSON.parse(savedTasks);
+          if (savedAlarms) alarms.value = JSON.parse(savedAlarms);
+          if (savedStrictMode) strictMode.value = savedStrictMode === 'true';
+        }
+        
+        function requestNotificationPermission() {
+          if ('Notification' in window) {
+            Notification.requestPermission().then(permission => {
+              console.log('Notification permission:', permission);
+            });
+          }
+        }
+        
+        // Lifecycle
+        onMounted(() => {
+          loadData();
+          requestNotificationPermission();
+          
+          // Update clock every second
+          setInterval(() => {
+            currentTime.value = getCurrentTimeString();
+            checkAlarms();
+          }, 1000);
+        });
+        
+        // Watch strict mode for changes
+        watch(strictMode, (newVal) => {
+          saveData();
+        });
+        
+        return {
+          // State
+          strictMode,
+          showAlarmModal,
+          activeAlarm,
+          alarmSound,
+          currentTime,
+          
+          // Data
+          newTask,
+          newAlarm,
+          tasks,
+          alarms,
+          
+          // Computed
+          uncompletedTasks,
+          sortedTasks,
+          
+          // Methods
+          addTask,
+          removeTask,
+          completeTask,
+          addAlarm,
+          removeAlarm,
+          completeAlarmTask,
+          snoozeAlarm,
+          formatDate,
+          getTaskText,
+          getAlarmTime,
+          hasAlarm
+        };
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>
