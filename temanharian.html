@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teman Harian - Bantuan untuk Yang Kewalahan</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .task-card {
+      transition: all 0.3s ease;
+    }
+    .task-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .priority-high { border-left: 4px solid #ef4444; }
+    .priority-medium { border-left: 4px solid #f59e0b; }
+    .priority-low { border-left: 4px solid #10b981; }
+    .stuck-mode {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { background-color: #fef2f2; }
+      50% { background-color: #fee2e2; }
+      100% { background-color: #fef2f2; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div id="app" class="container mx-auto p-4 max-w-3xl">
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">🤯 Teman Harian</h1>
+      <p class="text-gray-600">Bantuan kecil untuk hari-hari ketika semuanya terasa berantakan</p>
+    </header>
+
+    <!-- Main App -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <!-- Mode Selection -->
+      <div class="flex justify-center gap-4 mb-6">
+        <button 
+          @click="mode = 'normal'" 
+          :class="{'bg-blue-100': mode === 'normal'}"
+          class="px-4 py-2 rounded-lg border"
+        >
+          Mode Normal
+        </button>
+        <button 
+          @click="mode = 'stuck'" 
+          :class="{'bg-red-100': mode === 'stuck'}"
+          class="px-4 py-2 rounded-lg border"
+        >
+          Aku Stuck!
+        </button>
+      </div>
+
+      <!-- Stuck Mode -->
+      <div v-if="mode === 'stuck'" class="stuck-mode p-4 rounded-lg mb-6">
+        <h2 class="text-xl font-bold mb-3 text-center">💡 Lakukan Salah Satu Ini Dulu</h2>
+        <div class="grid gap-3">
+          <button 
+            v-for="(action, index) in quickActions" 
+            :key="index"
+            @click="addQuickAction(action)"
+            class="task-card bg-white p-3 rounded-lg border shadow-sm text-left"
+          >
+            {{ action }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Profile Section -->
+      <div class="mb-6">
+        <h2 class="text-xl font-bold mb-3 border-b pb-2">👤 Profil Singkat</h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-2">
+              <span class="font-medium">Kondisi Utama yang Sering Mengganggu:</span>
+              <select v-model="profile.mainIssue" class="w-full p-2 border rounded">
+                <option value="forget">Sering lupa hal kecil</option>
+                <option value="overwhelm">Kewalahan dengan banyak hal</option>
+                <option value="procrastinate">Menunda-nunda</option>
+                <option value="stress">Stres membuat sulit fokus</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label class="block mb-2">
+              <span class="font-medium">Waktu Paling Produktif:</span>
+              <select v-model="profile.productiveTime" class="w-full p-2 border rounded">
+                <option value="morning">Pagi</option>
+                <option value="afternoon">Siang/Sore</option>
+                <option value="evening">Malam</option>
+                <option value="irregular">Tidak teratur</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Task Input -->
+      <div class="mb-6">
+        <h2 class="text-xl font-bold mb-3 border-b pb-2">➕ Tambahkan Yang Perlu Diingat</h2>
+        <div class="flex gap-2 mb-3">
+          <input 
+            v-model="newTask.text" 
+            type="text" 
+            placeholder="Apa yang mudah kamu lupa?" 
+            class="flex-1 p-2 border rounded"
+          >
+          <select v-model="newTask.priority" class="p-2 border rounded">
+            <option value="high">Penting</option>
+            <option value="medium">Biasa</option>
+            <option value="low">Kalau sempat</option>
+          </select>
+          <button 
+            @click="addTask" 
+            class="bg-blue-500 text-white px-4 rounded"
+          >
+            Tambah
+          </button>
+        </div>
+        <div class="text-sm text-gray-500">
+          Contoh: "Minum obat jam 10 pagi", "Bayar listrik tanggal 5", "Telepon ibu seminggu sekali"
+        </div>
+      </div>
+
+      <!-- Task List -->
+      <div>
+        <h2 class="text-xl font-bold mb-3 border-b pb-2">📝 Daftar Pengingat</h2>
+        
+        <div v-if="tasks.length === 0" class="text-center py-8 text-gray-500">
+          Belum ada pengingat. Tambahkan hal-hal yang sering kamu lupakan.
+        </div>
+        
+        <div v-else class="space-y-3">
+          <div 
+            v-for="(task, index) in tasks" 
+            :key="index"
+            :class="`priority-${task.priority}`"
+            class="task-card bg-white p-3 rounded-lg border shadow-sm flex items-start"
+          >
+            <input 
+              type="checkbox" 
+              v-model="task.completed"
+              @change="saveTasks"
+              class="mt-1 mr-2"
+            >
+            <div class="flex-1">
+              <div :class="{'line-through text-gray-400': task.completed}">
+                {{ task.text }}
+              </div>
+              <div class="text-xs text-gray-500 mt-1">
+                Ditambahkan: {{ formatDate(task.addedAt) }}
+              </div>
+            </div>
+            <button 
+              @click="removeTask(index)"
+              class="text-red-500 ml-2"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Suggestions -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <h2 class="text-xl font-bold mb-3 border-b pb-2">💬 Saran Hari Ini</h2>
+      <div class="prose">
+        <p v-if="profile.mainIssue === 'forget'">
+          Kamu cenderung mudah lupa hal kecil. Coba:
+          <ul class="list-disc pl-5">
+            <li>Letakkan pengingat di tempat yang sering dilihat</li>
+            <li>Gunakan alarm untuk hal penting</li>
+            <li>Buat kebiasaan baru dengan menempelkan catatan</li>
+          </ul>
+        </p>
+        <p v-if="profile.mainIssue === 'overwhelm'">
+          Kamu sering kewalahan. Coba:
+          <ul class="list-disc pl-5">
+            <li>Fokus pada 1-2 hal penting hari ini</li>
+            <li>Break tugas besar menjadi langkah kecil</li>
+            <li>Ambil napas dalam sebelum memulai</li>
+          </ul>
+        </p>
+        <p v-if="profile.mainIssue === 'procrastinate'">
+          Kamu cenderung menunda. Coba:
+          <ul class="list-disc pl-5">
+            <li>Mulai dengan tugas termudah dulu</li>
+            <li>Setel timer 5 menit - lakukan saja selama itu</li>
+            <li>Berhadiah kecil setelah menyelesaikan sesuatu</li>
+          </ul>
+        </p>
+        <p v-if="profile.mainIssue === 'stress'">
+          Stres mengganggu fokusmu. Coba:
+          <ul class="list-disc pl-5">
+            <li>Ambil waktu 1 menit untuk menenangkan diri</li>
+            <li>Tulis apa yang membuat stres di kertas</li>
+            <li>Lakukan peregangan sederhana</li>
+          </ul>
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-sm text-gray-500 mt-8">
+      <p>Tool sederhana untuk membantumu bernapas lebih lega setiap hari</p>
+      <p class="mt-1">Data disimpan di perangkatmu - aman dan pribadi</p>
+    </footer>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // App State
+        const mode = ref('normal');
+        
+        // User Profile
+        const profile = reactive({
+          mainIssue: 'forget',
+          productiveTime: 'morning'
+        });
+        
+        // Tasks
+        const newTask = reactive({
+          text: '',
+          priority: 'medium'
+        });
+        
+        const tasks = ref([]);
+        
+        // Quick Actions for Stuck Mode
+        const quickActions = [
+          "Minum segelas air",
+          "Ambil napas dalam 3 kali",
+          "Tulis 1 hal yang mengganggu pikiran",
+          "Berdiri dan luruskan badan",
+          "Buka jendela/jendela kamar",
+          "Cuci muka dengan air dingin",
+          "Tulis 1 hal kecil yang bisa diselesaikan sekarang",
+          "Matikan notifikasi selama 10 menit"
+        ];
+        
+        // Methods
+        const addTask = () => {
+          if (newTask.text.trim()) {
+            tasks.value.push({
+              text: newTask.text.trim(),
+              priority: newTask.priority,
+              completed: false,
+              addedAt: new Date()
+            });
+            newTask.text = '';
+            saveTasks();
+          }
+        };
+        
+        const removeTask = (index) => {
+          tasks.value.splice(index, 1);
+          saveTasks();
+        };
+        
+        const addQuickAction = (action) => {
+          tasks.value.unshift({
+            text: action,
+            priority: 'medium',
+            completed: false,
+            addedAt: new Date()
+          });
+          saveTasks();
+          mode.value = 'normal';
+        };
+        
+        const saveTasks = () => {
+          localStorage.setItem('dailyFriendTasks', JSON.stringify(tasks.value));
+          localStorage.setItem('dailyFriendProfile', JSON.stringify(profile));
+        };
+        
+        const loadTasks = () => {
+          const savedTasks = localStorage.getItem('dailyFriendTasks');
+          const savedProfile = localStorage.getItem('dailyFriendProfile');
+          
+          if (savedTasks) tasks.value = JSON.parse(savedTasks);
+          if (savedProfile) Object.assign(profile, JSON.parse(savedProfile));
+        };
+        
+        const formatDate = (dateString) => {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        };
+        
+        // Lifecycle
+        onMounted(() => {
+          loadTasks();
+        });
+        
+        return {
+          mode,
+          profile,
+          newTask,
+          tasks,
+          quickActions,
+          addTask,
+          removeTask,
+          addQuickAction,
+          formatDate
+        };
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>
