@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muslim Tracker Premium</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.3s ease;
+    }
+    .fade-enter-from,
+    .fade-leave-to {
+      opacity: 0;
+    }
+    .prayer-card {
+      transition: all 0.3s ease;
+    }
+    .prayer-card.completed {
+      background-color: #ecfdf5;
+      border-left: 4px solid #10b981;
+    }
+    .prayer-card.missed {
+      background-color: #fef2f2;
+      border-left: 4px solid #ef4444;
+    }
+    .habit-streak {
+      position: relative;
+    }
+    .habit-streak:after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: #3b82f6;
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+    .habit-streak.active:after {
+      transform: scaleX(1);
+    }
+    .progress-ring__circle {
+      transition: stroke-dashoffset 0.5s ease;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="app" class="container mx-auto p-4 max-w-4xl">
+    <!-- Notification -->
+    <transition name="fade">
+      <div v-if="showNotification" class="fixed bottom-4 right-4 z-50">
+        <div :class="notificationClass" class="px-6 py-3 rounded-lg shadow-lg">
+          {{ notificationMessage }}
+        </div>
+      </div>
+    </transition>
+
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <div class="flex justify-between items-center mb-2">
+        <div class="text-left">
+          <div class="text-sm text-gray-500">{{ hijriDate }}</div>
+          <div class="text-sm text-gray-500">{{ currentDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }}</div>
+        </div>
+        <h1 class="text-3xl font-bold text-gray-800">🕌 Muslim Tracker</h1>
+        <div class="text-right">
+          <div class="text-sm text-gray-500" v-if="nextPrayer">
+            <span v-if="nextPrayer.time > currentTime">Sholat {{ nextPrayer.name }} dalam {{ timeToNextPrayer }}</span>
+            <span v-else>Sholat {{ nextPrayer.name }} sudah masuk</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-gray-600">Lacak ibadah harian dan tingkatkan kualitas taqarrub ilallah</p>
+    </header>
+
+    <!-- Prayer Times -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4 border-b pb-2">🕋 Waktu Sholat Hari Ini</h2>
+      
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div v-for="prayer in prayerTimes" 
+             :class="{
+               'prayer-card completed': isPrayerCompleted(prayer.name),
+               'prayer-card missed': isPrayerMissed(prayer.name),
+               'prayer-card': !isPrayerCompleted(prayer.name) && !isPrayerMissed(prayer.name)
+             }"
+             class="p-3 rounded-lg border">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="font-bold">{{ prayer.name }}</h3>
+              <div class="text-gray-500 text-sm">{{ prayer.time }}</div>
+            </div>
+            <div v-if="prayer.name !== 'Sunrise' && prayer.name !== 'Sunset'">
+              <button @click="togglePrayerCompletion(prayer.name)"
+                      :class="{
+                        'bg-green-100 text-green-800': isPrayerCompleted(prayer.name),
+                        'bg-gray-100 text-gray-800': !isPrayerCompleted(prayer.name)
+                      }"
+                      class="w-8 h-8 rounded-full flex items-center justify-center">
+                <i v-if="isPrayerCompleted(prayer.name)" class="fas fa-check"></i>
+                <i v-else class="fas fa-mosque"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prayer Progress -->
+      <div class="mb-6">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="font-medium">Progress Sholat Hari Ini</h3>
+          <span>{{ completedPrayersCount }}/5 ({{ Math.round((completedPrayersCount / 5) * 100) }}%)</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3">
+          <div class="bg-green-500 h-3 rounded-full" 
+               :style="{ width: `${Math.round((completedPrayersCount / 5) * 100)}%` }"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Ibadah Tracker -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4 border-b pb-2">📿 Ibadah Harian</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <!-- Quran Reading -->
+        <div class="border rounded-lg p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold flex items-center">
+              <i class="fas fa-book-quran text-green-600 mr-2"></i> 
+              Tilawah Quran
+            </h3>
+            <div class="flex items-center">
+              <span class="text-sm mr-2">{{ quranProgress.current }}/{{ quranProgress.target }} ayat</span>
+              <button @click="showQuranModal = true" class="text-blue-500">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <div class="relative w-16 h-16 mr-4">
+              <svg class="w-full h-full" viewBox="0 0 36 36">
+                <path
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#e6e6e6"
+                  stroke-width="3"
+                />
+                <path
+                  class="progress-ring__circle"
+                  d="M18 2.0845
+                    a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#10b981"
+                  stroke-width="3"
+                  :stroke-dasharray="circumference"
+                  :stroke-dashoffset="quranProgressOffset"
+                />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center text-xs font-bold">
+                {{ Math.round((quranProgress.current / quranProgress.target) * 100) }}%
+              </div>
+            </div>
+            <div class="flex-1">
+              <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Target Harian</span>
+                <span>{{ quranProgress.current }}/{{ quranProgress.target }}</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-green-500 h-2 rounded-full" 
+                     :style="{ width: `${Math.round((quranProgress.current / quranProgress.target) * 100)}%` }"></div>
+              </div>
+              <button @click="addQuranReading(1)" class="mt-2 px-3 py-1 bg-green-100 text-green-800 rounded-lg text-sm">
+                +1 Ayat
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Dzikir Counter -->
+        <div class="border rounded-lg p-4">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold flex items-center">
+              <i class="fas fa-dharmachakra text-blue-600 mr-2"></i> 
+              Dzikir Harian
+            </h3>
+            <button @click="showDzikirModal = true" class="text-blue-500">
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
+          <div class="space-y-3">
+            <div v-for="(dzikir, index) in dzikirCounters" class="flex items-center">
+              <div class="flex-1">
+                <div class="text-sm">{{ dzikir.name }}</div>
+                <div class="flex items-center mt-1">
+                  <button @click="decrementDzikir(index)" class="w-8 h-8 bg-gray-100 rounded-l-lg">
+                    -
+                  </button>
+                  <div class="w-12 h-8 bg-gray-50 flex items-center justify-center border-t border-b">
+                    {{ dzikir.count }}
+                  </div>
+                  <button @click="incrementDzikir(index)" class="w-8 h-8 bg-gray-100 rounded-r-lg">
+                    +
+                  </button>
+                </div>
+              </div>
+              <div class="w-16 h-16 relative">
+                <svg class="w-full h-full" viewBox="0 0 36 36">
+                  <path
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                    a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#e6e6e6"
+                    stroke-width="2"
+                  />
+                  <path
+                    class="progress-ring__circle"
+                    d="M18 2.0845
+                      a 15.9155 15.9155 0 0 1 0 31.831
+                      a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#3b82f6"
+                    stroke-width="2"
+                    :stroke-dasharray="circumference"
+                    :stroke-dashoffset="getDzikirOffset(dzikir)"
+                  />
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center text-xs">
+                  {{ Math.round((dzikir.count / dzikir.target) * 100) }}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Other Ibadah -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div v-for="habit in dailyHabits" 
+             @click="toggleHabitCompletion(habit.id)"
+             :class="{ 'bg-blue-50': isHabitCompleted(habit.id) }"
+             class="border rounded-lg p-3 text-center cursor-pointer hover:bg-blue-50">
+          <div class="text-2xl mb-2">
+            <i :class="habit.icon"></i>
+          </div>
+          <div class="font-medium text-sm">{{ habit.name }}</div>
+          <div v-if="habit.streak > 0" class="text-xs text-blue-600 mt-1">
+            🔥 {{ habit.streak }} hari
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Report -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4 border-b pb-2">📊 Laporan Mingguan</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Prayer Chart -->
+        <div class="border rounded-lg p-4">
+          <h3 class="font-medium mb-3">Konsistensi Sholat</h3>
+          <div class="flex items-end h-48 gap-1">
+            <div v-for="day in weeklyPrayerReport" 
+                 class="flex-1 flex flex-col items-center">
+              <div 
+                v-for="prayer in day.prayers"
+                class="w-full"
+                :style="{ 
+                  height: `${(prayer.count / 5) * 100}%`,
+                  backgroundColor: prayer.completed ? '#10b981' : '#ef4444'
+                }">
+              </div>
+              <div class="text-xs mt-1">{{ day.day }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Habit Streaks -->
+        <div class="border rounded-lg p-4">
+          <h3 class="font-medium mb-3">Streak Ibadah</h3>
+          <div class="space-y-3">
+            <div v-for="habit in dailyHabitsWithStreak" class="flex items-center">
+              <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center mr-3">
+                <i :class="habit.icon"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between text-sm mb-1">
+                  <span>{{ habit.name }}</span>
+                  <span>{{ habit.streak }} hari</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-blue-500 h-2 rounded-full" 
+                       :style="{ width: `${Math.min(habit.streak, 100)}%` }"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quran Modal -->
+    <transition name="fade">
+      <div v-if="showQuranModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h2 class="text-xl font-bold mb-4">📖 Set Target Tilawah</h2>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block mb-2">Jumlah Ayat</label>
+              <input v-model.number="quranProgress.target" type="number" class="w-full p-3 border rounded-lg">
+            </div>
+            
+            <div>
+              <label class="block mb-2">Ayat yang sudah dibaca</label>
+              <input v-model.number="quranProgress.current" type="number" class="w-full p-3 border rounded-lg">
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2 mt-6">
+            <button @click="showQuranModal = false"
+                    class="px-4 py-2 border rounded-lg">
+              Batal
+            </button>
+            <button @click="saveQuranProgress"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Dzikir Modal -->
+    <transition name="fade">
+      <div v-if="showDzikirModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h2 class="text-xl font-bold mb-4">📿 Kelola Dzikir</h2>
+          
+          <div class="space-y-4 mb-4">
+            <div v-for="(dzikir, index) in dzikirCounters" class="flex items-center gap-2">
+              <input v-model="dzikir.name" type="text" class="flex-1 p-2 border rounded-lg">
+              <input v-model.number="dzikir.target" type="number" class="w-16 p-2 border rounded-lg">
+              <button @click="removeDzikir(index)" class="text-red-500 p-2">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+            
+            <button @click="addDzikirCounter" class="w-full py-2 border-2 border-dashed rounded-lg text-gray-500">
+              + Tambah Dzikir
+            </button>
+          </div>
+          
+          <div class="flex justify-end gap-2">
+            <button @click="showDzikirModal = false"
+                    class="px-4 py-2 border rounded-lg">
+              Batal
+            </button>
+            <button @click="saveDzikirCounters"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Data Management -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <h2 class="text-xl font-bold mb-4 border-b pb-2">⚙️ Manajemen Data</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button @click="exportToJSON" class="p-3 bg-green-50 text-green-800 rounded-lg hover:bg-green-100">
+          <i class="fas fa-file-export mr-2"></i> Export Data
+        </button>
+        <button @click="showImportModal = true" class="p-3 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100">
+          <i class="fas fa-file-import mr-2"></i> Import Data
+        </button>
+        <button @click="confirmReset" class="p-3 bg-red-50 text-red-800 rounded-lg hover:bg-red-100">
+          <i class="fas fa-trash mr-2"></i> Reset Data
+        </button>
+      </div>
+    </div>
+
+    <!-- Import Modal -->
+    <transition name="fade">
+      <div v-if="showImportModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h2 class="text-xl font-bold mb-4">📥 Import Data</h2>
+          
+          <div class="space-y-4 mb-4">
+            <div>
+              <label class="block mb-2">Pilih file JSON:</label>
+              <input type="file" @change="handleFileImport" class="w-full p-2 border rounded-lg">
+            </div>
+            
+            <div>
+              <label class="flex items-center">
+                <input v-model="importMode" type="radio" value="replace" class="mr-2">
+                <span>Ganti semua data yang ada</span>
+              </label>
+              <label class="flex items-center mt-2">
+                <input v-model="importMode" type="radio" value="merge" class="mr-2">
+                <span>Gabungkan dengan data yang ada</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2">
+            <button @click="showImportModal = false"
+                    class="px-4 py-2 border rounded-lg">
+              Batal
+            </button>
+            <button @click="performImport"
+                    :disabled="!importData"
+                    :class="{
+                      'bg-gray-400 cursor-not-allowed': !importData,
+                      'bg-blue-600 hover:bg-blue-700': importData
+                    }"
+                    class="px-4 py-2 text-white rounded-lg">
+              Import
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Reset Confirmation -->
+    <transition name="fade">
+      <div v-if="showResetConfirm" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h2 class="text-xl font-bold mb-4">⚠️ Reset Semua Data</h2>
+          <p class="mb-6">Apakah Anda yakin ingin mereset semua data? Tindakan ini tidak dapat dibatalkan.</p>
+          
+          <div class="flex justify-end gap-2">
+            <button @click="showResetConfirm = false"
+                    class="px-4 py-2 border rounded-lg">
+              Batal
+            </button>
+            <button @click="resetAllData"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+              Ya, Reset
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // App State
+        const currentDate = ref(new Date());
+        const showQuranModal = ref(false);
+        const showDzikirModal = ref(false);
+        const showImportModal = ref(false);
+        const showResetConfirm = ref(false);
+        const showNotification = ref(false);
+        const notificationMessage = ref('');
+        const notificationClass = ref('');
+        const importMode = ref('replace');
+        const importData = ref(null);
+        
+        // Prayer Times (example data - in real app you would fetch from API)
+        const prayerTimes = reactive([
+          { name: 'Subuh', time: '04:30' },
+          { name: 'Sunrise', time: '05:45' },
+          { name: 'Dhuhr', time: '12:00' },
+          { name: 'Asr', time: '15:15' },
+          { name: 'Maghrib', time: '18:00' },
+          { name: 'Isha', time: '19:30' }
+        ]);
+        
+        // Current time for prayer time comparison
+        const currentTime = ref('');
+        
+        // Hijri Date
+        const hijriDate = ref('');
+        
+        // Quran Progress
+        const quranProgress = reactive({
+          current: 0,
+          target: 10
+        });
+        
+        // Dzikir Counters
+        const dzikirCounters = reactive([
+          { name: 'Subhanallah', count: 0, target: 100 },
+          { name: 'Alhamdulillah', count: 0, target: 100 },
+          { name: 'Allahu Akbar', count: 0, target: 100 }
+        ]);
+        
+        // Daily Habits
+        const dailyHabits = reactive([
+          { id: 'shalat-sunnah', name: 'Shalat Sunnah', icon: 'fas fa-pray', streak: 0 },
+          { id: 'dhuha', name: 'Dhuha', icon: 'fas fa-sun', streak: 0 },
+          { id: 'tahajud', name: 'Tahajud', icon: 'fas fa-moon', streak: 0 },
+          { id: 'sedekah', name: 'Sedekah', icon: 'fas fa-hand-holding-heart', streak: 0 }
+        ]);
+        
+        // Prayer Completion
+        const prayerCompletion = reactive({});
+        
+        // Data Storage
+        const appData = reactive({
+          prayers: {},
+          quran: {},
+          dzikir: {},
+          habits: {}
+        });
+        
+        // Computed Properties
+        const nextPrayer = computed(() => {
+          const now = currentTime.value;
+          if (!now) return null;
+          
+          const [currentHours, currentMinutes] = now.split(':').map(Number);
+          
+          for (const prayer of prayerTimes) {
+            if (prayer.name === 'Sunrise' || prayer.name === 'Sunset') continue;
+            
+            const [prayerHours, prayerMinutes] = prayer.time.split(':').map(Number);
+            
+            if (prayerHours > currentHours || 
+                (prayerHours === currentHours && prayerMinutes > currentMinutes)) {
+              return prayer;
+            }
+          }
+          
+          // If all prayers passed, return first prayer of next day
+          return prayerTimes.find(p => p.name === 'Subuh');
+        });
+        
+        const timeToNextPrayer = computed(() => {
+          if (!nextPrayer.value || !currentTime.value) return '';
+          
+          const now = new Date();
+          const [currentHours, currentMinutes] = currentTime.value.split(':').map(Number);
+          
+          let prayerDate = new Date();
+          const [prayerHours, prayerMinutes] = nextPrayer.value.time.split(':').map(Number);
+          
+          // If next prayer is tomorrow's Subuh
+          if (nextPrayer.value.name === 'Subuh' && 
+              (prayerHours < currentHours || 
+              (prayerHours === currentHours && prayerMinutes <= currentMinutes))) {
+            prayerDate.setDate(prayerDate.getDate() + 1);
+          }
+          
+          prayerDate.setHours(prayerHours, prayerMinutes, 0, 0);
+          
+          const diffMs = prayerDate - now;
+          const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+          const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          
+          return `${diffHours} jam ${diffMinutes} menit`;
+        });
+        
+        const completedPrayersCount = computed(() => {
+          const dateStr = currentDate.value.toISOString().split('T')[0];
+          const todayPrayers = prayerCompletion[dateStr] || {};
+          return Object.values(todayPrayers).filter(Boolean).length;
+        });
+        
+        const dailyHabitsWithStreak = computed(() => {
+          return dailyHabits.filter(habit => habit.streak > 0);
+        });
+        
+        const weeklyPrayerReport = computed(() => {
+          const report = [];
+          const today = new Date(currentDate.value);
+          
+          for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            const dayPrayers = prayerCompletion[dateStr] || {};
+            const prayers = prayerTimes
+              .filter(p => p.name !== 'Sunrise' && p.name !== 'Sunset')
+              .map(prayer => ({
+                name: prayer.name,
+                completed: dayPrayers[prayer.name] || false,
+                count: dayPrayers[prayer.name] ? 1 : 0
+              }));
+            
+            report.push({
+              date: dateStr,
+              day: date.toLocaleDateString('id-ID', { weekday: 'short' }),
+              prayers
+            });
+          }
+          
+          return report;
+        });
+        
+        const circumference = computed(() => 2 * Math.PI * 15);
+        
+        const quranProgressOffset = computed(() => {
+          const progress = 1 - (quranProgress.current / quranProgress.target);
+          return progress * circumference.value;
+        });
+        
+        // Methods
+        function showNotificationMessage(message, type = 'success') {
+          notificationMessage.value = message;
+          notificationClass.value = type === 'success' 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800';
+          showNotification.value = true;
+          
+          setTimeout(() => {
+            showNotification.value = false;
+          }, 3000);
+        }
+        
+        function updateCurrentTime() {
+          const now = new Date();
+          currentTime.value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        }
+        
+        function calculateHijriDate() {
+          // This is a simplified calculation - in a real app you would use a proper Hijri calendar library
+          const gregDate = new Date();
+          const gregYear = gregDate.getFullYear();
+          const gregMonth = gregDate.getMonth();
+          const gregDay = gregDate.getDate();
+          
+          // Approximate calculation (may be off by 1-2 days)
+          const hijriYear = Math.floor((gregYear - 622) * (33 / 32));
+          let hijriMonth = (gregMonth + 1) % 12;
+          let hijriDay = gregDay;
+          
+          const hijriMonths = [
+            'Muharram', 'Safar', 'Rabiul Awal', 'Rabiul Akhir', 
+            'Jumadil Awal', 'Jumadil Akhir', 'Rajab', 
+            'Sya\'ban', 'Ramadhan', 'Syawwal', 
+            'Dzulqaidah', 'Dzulhijjah'
+          ];
+          
+          hijriDate.value = `${hijriDay} ${hijriMonths[hijriMonth]} ${hijriYear} H`;
+        }
+        
+        function isPrayerCompleted(prayerName) {
+          const dateStr = currentDate.value.toISOString().split('T')[0];
+          return prayerCompletion[dateStr]?.[prayerName] || false;
+        }
+        
+        function isPrayerMissed(prayerName) {
+          if (prayerName === 'Sunrise' || prayerName === 'Sunset') return false;
+          
+          const now = new Date();
+          const [currentHours, currentMinutes] = currentTime.value.split(':').map(Number);
+          
+          const prayer = prayerTimes.find(p => p.name === prayerName);
+          const [prayerHours, prayerMinutes] = prayer.time.split(':').map(Number);
+          
+          // Prayer time has passed
+          if (prayerHours < currentHours || 
+              (prayerHours === currentHours && prayerMinutes < currentMinutes)) {
+            return !isPrayerCompleted(prayerName);
+          }
+          
+          return false;
+        }
+        
+        function togglePrayerCompletion(prayerName) {
+          const dateStr = currentDate.value.toISOString().split('T')[0];
+          
+          if (!prayerCompletion[dateStr]) {
+            prayerCompletion[dateStr] = {};
+          }
+          
+          prayerCompletion[dateStr][prayerName] = !prayerCompletion[dateStr][prayerName];
+          saveData();
+          
+          showNotificationMessage(
+            prayerCompletion[dateStr][prayerName] 
+              ? `Sholat ${prayerName} ditandai selesai` 
+              : `Sholat ${prayerName} ditandai belum selesai`
+          );
+        }
+        
+        function addQuranReading(amount) {
+          quranProgress.current += amount;
+          if (quranProgress.current > quranProgress.target) {
+            quranProgress.current = quranProgress.target;
+          }
+          saveData();
+        }
+        
+        function saveQuranProgress() {
+          showQuranModal.value = false;
+          saveData();
+          showNotificationMessage('Target tilawah disimpan');
+        }
+        
+        function getDzikirOffset(dzikir) {
+          const progress = 1 - (dzikir.count / dzikir.target);
+          return progress * circumference.value;
+        }
+        
+        function incrementDzikir(index) {
+          dzikirCounters[index].count++;
+          saveData();
+        }
+        
+        function decrementDzikir(index) {
+          if (dzikirCounters[index].count > 0) {
+            dzikirCounters[index].count--;
+            saveData();
+          }
+        }
+        
+        function addDzikirCounter() {
+          dzikirCounters.push({
+            name: 'Dzikir Baru',
+            count: 0,
+            target: 33
+          });
+        }
+        
+        function removeDzikir(index) {
+          dzikirCounters.splice(index, 1);
+        }
+        
+        function saveDzikirCounters() {
+          showDzikirModal.value = false;
+          saveData();
+          showNotificationMessage('Dzikir disimpan');
+        }
+        
+        function isHabitCompleted(habitId) {
+          const dateStr = currentDate.value.toISOString().split('T')[0];
+          return appData.habits[dateStr]?.[habitId] || false;
+        }
+        
+        function toggleHabitCompletion(habitId) {
+          const dateStr = currentDate.value.toISOString().split('T')[0];
+          
+          if (!appData.habits[dateStr]) {
+            appData.habits[dateStr] = {};
+          }
+          
+          appData.habits[dateStr][habitId] = !appData.habits[dateStr][habitId];
+          
+          // Update streak
+          const habit = dailyHabits.find(h => h.id === habitId);
+          if (appData.habits[dateStr][habitId]) {
+            // Check if yesterday was completed for streak
+            const yesterday = new Date(currentDate.value);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            if (appData.habits[yesterdayStr]?.[habitId]) {
+              habit.streak++;
+            } else if (habit.streak === 0) {
+              habit.streak = 1;
+            }
+          } else {
+            // If unchecking, reset streak
+            habit.streak = 0;
+          }
+          
+          saveData();
+        }
+        
+        function exportToJSON() {
+          const data = {
+            prayers: prayerCompletion,
+            quran: quranProgress,
+            dzikir: dzikirCounters,
+            habits: appData.habits,
+            dailyHabits: dailyHabits,
+            exportedAt: new Date()
+          };
+          
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `muslim-tracker-data-${new Date().toISOString().split('T')[0]}.json`;
+          a.click();
+          
+          URL.revokeObjectURL(url);
+          showNotificationMessage('Data berhasil diexport');
+        }
+        
+        function handleFileImport(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              importData.value = JSON.parse(e.target.result);
+              showNotificationMessage('File berhasil dibaca', 'success');
+            } catch (error) {
+              showNotificationMessage('Format file tidak valid', 'error');
+              importData.value = null;
+            }
+          };
+          reader.readAsText(file);
+        }
+        
+        function performImport() {
+          if (!importData.value) {
+            showNotificationMessage('Tidak ada data untuk diimport', 'error');
+            return;
+          }
+          
+          try {
+            if (importMode.value === 'replace') {
+              // Replace all data
+              if (importData.value.prayers) {
+                Object.keys(prayerCompletion).forEach(key => delete prayerCompletion[key]);
+                Object.assign(prayerCompletion, importData.value.prayers);
+              }
+              
+              if (importData.value.quran) {
+                Object.assign(quranProgress, importData.value.quran);
+              }
+              
+              if (importData.value.dzikir) {
+                dzikirCounters.splice(0, dzikirCounters.length, ...importData.value.dzikir);
+              }
+              
+              if (importData.value.habits) {
+                Object.keys(appData.habits).forEach(key => delete appData.habits[key]);
+                Object.assign(appData.habits, importData.value.habits);
+              }
+              
+              if (importData.value.dailyHabits) {
+                dailyHabits.splice(0, dailyHabits.length, ...importData.value.dailyHabits);
+              }
+            } else {
+              // Merge data
+              if (importData.value.prayers) {
+                Object.assign(prayerCompletion, importData.value.prayers);
+              }
+              
+              if (importData.value.quran) {
+                Object.assign(quranProgress, importData.value.quran);
+              }
+              
+              if (importData.value.dzikir) {
+                importData.value.dzikir.forEach(newDzikir => {
+                  const exists = dzikirCounters.some(d => d.name === newDzikir.name);
+                  if (!exists) {
+                    dzikirCounters.push(newDzikir);
+                  }
+                });
+              }
+              
+              if (importData.value.habits) {
+                Object.assign(appData.habits, importData.value.habits);
+              }
+              
+              if (importData.value.dailyHabits) {
+                importData.value.dailyHabits.forEach(newHabit => {
+                  const exists = dailyHabits.some(h => h.id === newHabit.id);
+                  if (!exists) {
+                    dailyHabits.push(newHabit);
+                  }
+                });
+              }
+            }
+            
+            saveData();
+            showImportModal.value = false;
+            importData.value = null;
+            
+            showNotificationMessage('Data berhasil diimport');
+          } catch (error) {
+            showNotificationMessage('Gagal mengimport data', 'error');
+            console.error(error);
+          }
+        }
+        
+        function confirmReset() {
+          showResetConfirm.value = true;
+        }
+        
+        function resetAllData() {
+          // Reset prayer completion
+          Object.keys(prayerCompletion).forEach(key => delete prayerCompletion[key]);
+          
+          // Reset quran progress
+          quranProgress.current = 0;
+          quranProgress.target = 10;
+          
+          // Reset dzikir counters
+          dzikirCounters.splice(0, dzikirCounters.length, 
+            { name: 'Subhanallah', count: 0, target: 100 },
+            { name: 'Alhamdulillah', count: 0, target: 100 },
+            { name: 'Allahu Akbar', count: 0, target: 100 }
+          );
+          
+          // Reset habits
+          Object.keys(appData.habits).forEach(key => delete appData.habits[key]);
+          
+          // Reset daily habits streaks
+          dailyHabits.forEach(habit => {
+            habit.streak = 0;
+          });
+          
+          saveData();
+          showResetConfirm.value = false;
+          showNotificationMessage('Semua data telah direset');
+        }
+        
+        function saveData() {
+          const data = {
+            prayers: prayerCompletion,
+            quran: quranProgress,
+            dzikir: dzikirCounters,
+            habits: appData.habits,
+            dailyHabits: dailyHabits,
+            lastSaved: new Date()
+          };
+          
+          localStorage.setItem('muslimTrackerData', JSON.stringify(data));
+        }
+        
+        function loadData() {
+          const savedData = localStorage.getItem('muslimTrackerData');
+          if (savedData) {
+            try {
+              const data = JSON.parse(savedData);
+              
+              if (data.prayers) {
+                Object.assign(prayerCompletion, data.prayers);
+              }
+              
+              if (data.quran) {
+                Object.assign(quranProgress, data.quran);
+              }
+              
+              if (data.dzikir) {
+                dzikirCounters.splice(0, dzikirCounters.length, ...data.dzikir);
+              }
+              
+              if (data.habits) {
+                Object.assign(appData.habits, data.habits);
+              }
+              
+              if (data.dailyHabits) {
+                dailyHabits.splice(0, dailyHabits.length, ...data.dailyHabits);
+              }
+            } catch (error) {
+              console.error('Error loading saved data:', error);
+            }
+          }
+        }
+        
+        // Lifecycle
+        onMounted(() => {
+          updateCurrentTime();
+          calculateHijriDate();
+          loadData();
+          
+          // Update time every minute
+          setInterval(() => {
+            updateCurrentTime();
+          }, 60000);
+        });
+        
+        return {
+          // State
+          currentDate,
+          showQuranModal,
+          showDzikirModal,
+          showImportModal,
+          showResetConfirm,
+          showNotification,
+          notificationMessage,
+          notificationClass,
+          importMode,
+          importData,
+          
+          // Data
+          prayerTimes,
+          currentTime,
+          hijriDate,
+          quranProgress,
+          dzikirCounters,
+          dailyHabits,
+          
+          // Computed
+          nextPrayer,
+          timeToNextPrayer,
+          completedPrayersCount,
+          dailyHabitsWithStreak,
+          weeklyPrayerReport,
+          circumference,
+          quranProgressOffset,
+          
+          // Methods
+          showNotificationMessage,
+          isPrayerCompleted,
+          isPrayerMissed,
+          togglePrayerCompletion,
+          addQuranReading,
+          saveQuranProgress,
+          getDzikirOffset,
+          incrementDzikir,
+          decrementDzikir,
+          addDzikirCounter,
+          removeDzikir,
+          saveDzikirCounters,
+          isHabitCompleted,
+          toggleHabitCompletion,
+          exportToJSON,
+          handleFileImport,
+          performImport,
+          confirmReset,
+          resetAllData
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
