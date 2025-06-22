@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Estimasi Umur & Risiko Hidup</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6 flex items-center justify-center">
+  <div id="app" class="bg-white p-8 rounded-lg shadow-lg max-w-4xl w-full">
+    <h1 class="text-2xl font-bold mb-6 text-center">Form Estimasi Umur & Risiko Hidup</h1>
+
+    <form @submit.prevent="generateReport" class="space-y-6">
+
+      <!-- Data Dasar -->
+      <section>
+        <h2 class="text-lg font-semibold mb-2 border-b pb-1 border-gray-300">1. Data Dasar</h2>
+        <label class="block mb-2">
+          <span class="font-medium">Tanggal Lahir</span>
+          <input type="date" v-model="dob" required
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+        </label>
+
+        <label class="block mb-2">
+          <span class="font-medium">Target Usia Hidup (tahun)</span>
+          <input type="number" v-model.number="targetAge" min="30" max="120" required
+            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+        </label>
+      </section>
+
+      <!-- Faktor Risiko -->
+      <section>
+        <h2 class="text-lg font-semibold mb-2 border-b pb-1 border-gray-300">2. Faktor Risiko Penyakit Kronis</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <label v-for="(item,index) in chronicDiseases" :key="index" class="inline-flex items-center space-x-2">
+            <input type="checkbox" v-model="selectedChronicDiseases" :value="item" class="form-checkbox h-5 w-5 text-red-600" />
+            <span>{{ item.name }} ({{ item.effect }} tahun)</span>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold mb-2 border-b pb-1 border-gray-300">3. Faktor Risiko Gaya Hidup Negatif</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <label v-for="(item,index) in negativeHabits" :key="index" class="inline-flex items-center space-x-2">
+            <input type="checkbox" v-model="selectedNegativeHabits" :value="item" class="form-checkbox h-5 w-5 text-red-600" />
+            <span>{{ item.name }} ({{ item.effect }} tahun)</span>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold mb-2 border-b pb-1 border-gray-300">4. Faktor Risiko Mental & Sosial</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <label v-for="(item,index) in mentalSocialRisks" :key="index" class="inline-flex items-center space-x-2">
+            <input type="checkbox" v-model="selectedMentalSocialRisks" :value="item" class="form-checkbox h-5 w-5 text-red-600" />
+            <span>{{ item.name }} ({{ item.effect }} tahun)</span>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold mb-2 border-b pb-1 border-gray-300">5. Risiko Lingkungan</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <label v-for="(item,index) in environmentalRisks" :key="index" class="inline-flex items-center space-x-2">
+            <input type="checkbox" v-model="selectedEnvironmentalRisks" :value="item" class="form-checkbox h-5 w-5 text-red-600" />
+            <span>{{ item.name }} ({{ item.effect }} tahun)</span>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-lg font-semibold mb-2 border-b pb-1 border-gray-300">6. Gaya Hidup Sehat (Penyeimbang)</h2>
+        <div class="grid grid-cols-2 gap-4">
+          <label v-for="(item,index) in healthyHabits" :key="index" class="inline-flex items-center space-x-2">
+            <input type="checkbox" v-model="selectedHealthyHabits" :value="item" class="form-checkbox h-5 w-5 text-green-600" />
+            <span>{{ item.name }} (+{{ item.effect }} tahun)</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Form Deteksi Risiko Tersembunyi -->
+      <section>
+        <h2 class="text-lg font-semibold mb-2 border-b pb-1 border-gray-300">7. Deteksi Risiko Tersembunyi</h2>
+        <div class="space-y-2">
+          <label class="block">
+            <span>1. Berapa kali seminggu makan makanan cepat saji?</span>
+            <select v-model.number="hiddenRiskAnswers.fastFood" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+              <option :value="0">Tidak Pernah</option>
+              <option :value="1">1-2 kali</option>
+              <option :value="3">3-4 kali</option>
+              <option :value="5">5 kali atau lebih</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span>2. Rata-rata tidur berapa jam per malam?</span>
+            <select v-model.number="hiddenRiskAnswers.sleepHours" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+              <option :value="8">8 jam atau lebih</option>
+              <option :value="6">6-7 jam</option>
+              <option :value="4">4-5 jam</option>
+              <option :value="3">Kurang dari 4 jam</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span>3. Berapa kali kamu olahraga per minggu?</span>
+            <select v-model.number="hiddenRiskAnswers.exercise" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+              <option :value="5">5 kali atau lebih</option>
+              <option :value="3">3-4 kali</option>
+              <option :value="1">1-2 kali</option>
+              <option :value="0">Tidak pernah</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span>4. Seberapa sering merasa lelah tanpa sebab?</span>
+            <select v-model.number="hiddenRiskAnswers.tiredness" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+              <option :value="0">Tidak pernah</option>
+              <option :value="1">Kadang-kadang</option>
+              <option :value="3">Sering</option>
+              <option :value="5">Selalu</option>
+            </select>
+          </label>
+
+          <label class="block">
+            <span>5. Kapan terakhir kali cek kesehatan ke dokter?</span>
+            <select v-model.number="hiddenRiskAnswers.lastCheckup" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+              <option :value="0">Dalam 6 bulan terakhir</option>
+              <option :value="2">1 tahun lalu</option>
+              <option :value="4">Lebih dari 1 tahun</option>
+              <option :value="6">Tidak pernah</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <button
+        type="submit"
+        class="mt-6 w-full bg-blue-600 text-white font-semibold py-3 rounded-md hover:bg-blue-700 transition"
+      >
+        Hitung Estimasi & Hasilkan Prompt
+      </button>
+    </form>
+
+    <section v-if="result" class="mt-8">
+      <h2 class="text-lg font-semibold mb-2 border-b pb-1 border-gray-300">Hasil Estimasi & Prompt</h2>
+      <textarea
+        readonly
+        class="w-full h-64 p-4 rounded-md border border-gray-300 font-mono text-sm whitespace-pre-wrap bg-gray-50"
+        :value="result"
+      ></textarea>
+    </section>
+  </div>
+
+  <script>
+    const { createApp, reactive, computed } = Vue;
+
+    createApp({
+      setup() {
+        // Data penyakit kronis
+        const chronicDiseases = [
+          { name: "Diabetes tipe 2", effect: 8 },
+          { name: "Hipertensi tidak terkontrol", effect: 4 },
+          { name: "Penyakit jantung koroner", effect: 9 },
+          { name: "Stroke permanen", effect: 12 },
+          { name: "Gangguan ginjal tahap lanjut", effect: 10 },
+          { name: "Obesitas berat (BMI > 35)", effect: 7 },
+          { name: "Gangguan mental berat", effect: 12 },
+        ];
+
+        // Kebiasaan buruk
+        const negativeHabits = [
+          { name: "Merokok aktif (perokok berat)", effect: 10 },
+          { name: "Merokok ringan/sosial", effect: 6 },
+          { name: "Konsumsi alkohol berlebih", effect: 7 },
+          { name: "Kurang tidur kronis (<5 jam/hari)", effect: 4 },
+          { name: "Makan junk food tiap hari", effect: 3 },
+          { name: "Tidak pernah olahraga", effect: 5 },
+          { name: "Stres berat tanpa manajemen", effect: 5 },
+          { name: "Screen time >10 jam/hari tanpa gerak", effect: 3 },
+        ];
+
+        // Risiko mental & sosial
+        const mentalSocialRisks = [
+          { name: "Isolasi sosial kronis", effect: 5 },
+          { name: "Depresi berat tanpa penanganan", effect: 8 },
+          { name: "Kesepian jangka panjang", effect: 4 },
+          { name: "Tidak punya tujuan hidup (purpose void)", effect: 3 },
+        ];
+
+        // Risiko lingkungan
+        const environmentalRisks = [
+          { name: "Polusi udara tinggi (kota besar)", effect: 2 },
+          { name: "Paparan bahan kimia berat", effect: 4 },
+          { name: "Tempat tinggal dengan konflik/kekerasan", effect: 3 },
+        ];
+
+        // Gaya hidup sehat
+        const healthyHabits = [
+          { name: "Olahraga 3–5x/minggu", effect: 4 },
+          { name: "Diet sehat (whole food, rendah gula)", effect: 3 },
+          { name: "Tidur cukup 7–8 jam/hari", effect: 2 },
+          { name: "Hubungan sosial sehat", effect: 4 },
+          { name: "Meditasi/ibadah rutin", effect: 2 },
+          { name: "Optimisme & tujuan hidup jelas", effect: 3 },
+        ];
+
+        // Reactive state
+        const dob = reactive({ value: "" });
+        const targetAge = reactive({ value: 75 });
+
+        // Selected checkboxes
+        const selectedChronicDiseases = reactive([]);
+        const selectedNegativeHabits = reactive([]);
+        const selectedMentalSocialRisks = reactive([]);
+        const selectedEnvironmentalRisks = reactive([]);
+        const selectedHealthyHabits = reactive([]);
+
+        // Hidden risk answers (detection)
+        const hiddenRiskAnswers = reactive({
+          fastFood: 0,
+          sleepHours: 8,
+          exercise: 5,
+          tiredness: 0,
+          lastCheckup: 0,
+        });
+
+        // Compute current age
+        function getAge(birthDate) {
+          if (!birthDate) return null;
+          const today = new Date();
+          const bDate = new Date(birthDate);
+          let age = today.getFullYear() - bDate.getFullYear();
+          const m = today.getMonth() - bDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < bDate.getDate())) {
+            age--;
+          }
+          return age;
+        }
+
+        // Calculate total negative effect
+        function totalNegativeEffect() {
+          let total = 0;
+          total += selectedChronicDiseases.reduce((sum, d) => sum + d.effect, 0);
+          total += selectedNegativeHabits.reduce((sum, d) => sum + d.effect, 0);
+          total += selectedMentalSocialRisks.reduce((sum, d) => sum + d.effect, 0);
+          total += selectedEnvironmentalRisks.reduce((sum, d) => sum + d.effect, 0);
+          return total;
+        }
+
+        // Calculate total healthy effect
+        function totalHealthyEffect() {
+          return selectedHealthyHabits.reduce((sum, d) => sum + d.effect, 0);
+        }
+
+        // Calculate hidden risk score
+        function hiddenRiskScore() {
+          // Higher score = higher risk
+          return (
+            hiddenRiskAnswers.fastFood +
+            (8 - hiddenRiskAnswers.sleepHours) + // kurang tidur = risiko
+            (5 - hiddenRiskAnswers.exercise) + // kurang olahraga = risiko
+            hiddenRiskAnswers.tiredness +
+            hiddenRiskAnswers.lastCheckup
+          );
+        }
+
+        // Generate final report prompt
+        const result = Vue.ref("");
+
+        function generateReport() {
+          if (!dob.value) {
+            alert("Mohon isi tanggal lahir terlebih dahulu.");
+            return;
+          }
+          const age = getAge(dob.value);
+          if (age === null || age < 0 || age > 150) {
+            alert("Tanggal lahir tidak valid.");
+            return;
+          }
+          const negative = totalNegativeEffect();
+          const healthy = totalHealthyEffect();
+          const hiddenRisk = hiddenRiskScore();
+
+          const baseTarget = targetAge.value || 75;
+
+          // Adjust target umur dengan hidden risk
+          // Semakin tinggi hidden risk, semakin berkurang umur target
+          const hiddenRiskEffect = hiddenRisk * 0.8; // tiap point hidden risk kurangi 0.8 tahun
+
+          const realisticAge = Math.max(
+            0,
+            Math.min(120, baseTarget - negative + healthy - hiddenRiskEffect)
+          );
+
+          const remainingYears = Math.max(0, realisticAge - age);
+
+          // Konversi sisa waktu ke berbagai unit
+          const months = remainingYears * 12;
+          const weeks = remainingYears * 52;
+          const days = remainingYears * 365;
+          const hours = days * 24;
+          const minutes = hours * 60;
+          const seconds = minutes * 60;
+
+          // Format list faktor yg dipilih
+          function listItems(arr) {
+            if (!arr.length) return "Tidak ada";
+            return arr.map((i) => i.name).join(", ");
+          }
+
+          const promptText = `
+Estimasi Umur & Sisa Waktu Hidup
+===============================
+
+Tanggal Lahir          : ${dob.value}
+Umur Sekarang          : ${age} tahun
+Target Usia Hidup      : ${baseTarget} tahun
+
+Faktor Penyakit Kronis :
+  ${listItems(selectedChronicDiseases)}
+
+Faktor Risiko Negatif  :
+  ${listItems(selectedNegativeHabits)}
+
+Faktor Risiko Mental & Sosial :
+  ${listItems(selectedMentalSocialRisks)}
+
+Risiko Lingkungan      :
+  ${listItems(selectedEnvironmentalRisks)}
+
+Gaya Hidup Sehat       :
+  ${listItems(selectedHealthyHabits)}
+
+Deteksi Risiko Tersembunyi (Skor: ${hiddenRisk.toFixed(1)}) :
+  - Frekuensi makan junk food: ${hiddenRiskAnswers.fastFood} per minggu
+  - Tidur rata-rata: ${hiddenRiskAnswers.sleepHours} jam/malam
+  - Olahraga per minggu: ${hiddenRiskAnswers.exercise} kali
+  - Rasa lelah tanpa sebab: skor ${hiddenRiskAnswers.tiredness}
+  - Cek kesehatan terakhir: skor ${hiddenRiskAnswers.lastCheckup}
+
+Pengurangan Umur Total akibat faktor risiko: ${negative.toFixed(1)} tahun
+Penambahan Umur Total akibat gaya hidup sehat: ${healthy.toFixed(1)} tahun
+Pengurangan Umur akibat risiko tersembunyi: ${hiddenRiskEffect.toFixed(1)} tahun
+
+Estimasi Umur Hidup Realistis : ${realisticAge.toFixed(1)} tahun
+Sisa Waktu Hidup            : ${remainingYears.toFixed(1)} tahun
+  = ${months.toFixed(1)} bulan
+  = ${weeks.toFixed(1)} minggu
+  = ${days.toFixed(0)} hari
+  = ${hours.toFixed(0)} jam
+  = ${minutes.toFixed(0)} menit
+  = ${seconds.toFixed(0)} detik
+
+Catatan:
+- Ini adalah estimasi berdasarkan data dan gaya hidup yang kamu input.
+- Gunakan hasil ini sebagai motivasi untuk memperbaiki gaya hidup dan kesehatanmu.
+- Jika skor risiko tersembunyi tinggi, sangat disarankan untuk cek kesehatan rutin ke dokter.
+
+---
+
+Apa yang ingin kamu lakukan dengan sisa waktu ini? Gunakan dengan bijak!
+
+`;
+
+          result.value = promptText.trim();
+        }
+
+        return {
+          dob,
+          targetAge,
+          chronicDiseases,
+          negativeHabits,
+          mentalSocialRisks,
+          environmentalRisks,
+          healthyHabits,
+          selectedChronicDiseases,
+          selectedNegativeHabits,
+          selectedMentalSocialRisks,
+          selectedEnvironmentalRisks,
+          selectedHealthyHabits,
+          hiddenRiskAnswers,
+          generateReport,
+          result,
+        };
+      },
+    }).mount("#app");
+  </script>
+</body>
+</html>
