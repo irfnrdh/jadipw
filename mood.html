@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mood Tracker Premium</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.3s ease;
+    }
+    .fade-enter-from,
+    .fade-leave-to {
+      opacity: 0;
+    }
+    .mood-option {
+      transition: all 0.2s ease;
+    }
+    .mood-option.selected {
+      transform: scale(1.15);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .timeline-item {
+      position: relative;
+      padding-left: 2rem;
+    }
+    .timeline-item:before {
+      content: '';
+      position: absolute;
+      left: 0.5rem;
+      top: 1.5rem;
+      height: 100%;
+      width: 2px;
+      background-color: #e5e7eb;
+    }
+    .timeline-item:last-child:before {
+      display: none;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: 0;
+      top: 1rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chart-bar {
+      transition: height 0.5s ease;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="app" class="container mx-auto p-4 max-w-4xl">
+    <!-- Notification -->
+    <transition name="fade">
+      <div v-if="showNotification" class="fixed bottom-4 right-4 z-50">
+        <div :class="notificationClass" class="px-6 py-3 rounded-lg shadow-lg">
+          {{ notificationMessage }}
+        </div>
+      </div>
+    </transition>
+
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">🌈 Mood Tracker Premium</h1>
+      <p class="text-gray-600">Lacak perubahan perasaanmu sepanjang hari</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <!-- Date Navigation -->
+      <div class="flex justify-between items-center mb-6">
+        <button @click="prevDay" class="p-2 rounded-full hover:bg-gray-100">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="text-lg font-medium">
+          {{ currentDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }}
+        </div>
+        <button @click="nextDay" class="p-2 rounded-full hover:bg-gray-100" :disabled="isFutureDate">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Current Mood Section -->
+      <div class="mb-8 p-4 bg-blue-50 rounded-lg">
+        <h2 class="text-xl font-bold mb-4">Mood Saat Ini</h2>
+        
+        <div v-if="currentMoodEntry" class="flex items-center">
+          <div class="text-5xl mr-4">{{ moodOptions[currentMoodEntry.mood].emoji }}</div>
+          <div>
+            <div class="text-lg font-semibold">{{ moodOptions[currentMoodEntry.mood].label }}</div>
+            <div class="text-gray-500 text-sm">
+              Terakhir diperbarui: {{ formatTime(new Date(currentMoodEntry.timestamp)) }}
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-gray-500">
+          Belum ada data mood hari ini
+        </div>
+      </div>
+
+      <!-- Mood Selector -->
+      <div class="mb-8">
+        <h2 class="text-xl font-bold mb-4">Perbarui Mood Saya</h2>
+        
+        <div class="flex flex-wrap justify-center gap-4 mb-4">
+          <div v-for="(option, key) in moodOptions" 
+               @click="updateCurrentMood(key)"
+               :class="{ 
+                 'mood-option selected': currentSelectedMood === key,
+                 'mood-option': currentSelectedMood !== key
+               }"
+               class="w-20 h-20 flex flex-col items-center justify-center rounded-xl cursor-pointer"
+               :style="{ backgroundColor: option.bgColor }">
+            <span class="text-3xl mb-1">{{ option.emoji }}</span>
+            <span class="text-xs">{{ option.label }}</span>
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block mb-2">Catatan (opsional)</label>
+          <textarea v-model="moodNote" class="w-full p-3 border rounded-lg" placeholder="Apa yang mempengaruhi moodmu?"></textarea>
+        </div>
+        
+        <div class="flex justify-end">
+          <button @click="saveMoodEntry" 
+                  class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <i class="fas fa-save mr-2"></i> Simpan Mood
+          </button>
+        </div>
+      </div>
+
+      <!-- Mood Timeline -->
+      <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Riwayat Mood Hari Ini</h2>
+          <button @click="showAllHistory = !showAllHistory" class="text-sm text-blue-600">
+            {{ showAllHistory ? 'Sembunyikan' : 'Lihat Semua' }}
+          </button>
+        </div>
+        
+        <div v-if="todaysMoodEntries.length > 0" class="space-y-4">
+          <div v-for="(entry, index) in (showAllHistory ? todaysMoodEntries : todaysMoodEntries.slice(0, 3))" 
+               class="timeline-item">
+            <div class="timeline-dot" :style="{ backgroundColor: moodOptions[entry.mood].bgColor }">
+              {{ moodOptions[entry.mood].emoji }}
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h3 class="font-semibold">{{ moodOptions[entry.mood].label }}</h3>
+                  <p v-if="entry.note" class="text-gray-700 mt-1">{{ entry.note }}</p>
+                </div>
+                <div class="text-sm text-gray-500 whitespace-nowrap ml-2">
+                  {{ formatTime(new Date(entry.timestamp)) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-center text-gray-500 py-4">
+          Belum ada riwayat mood hari ini
+        </div>
+      </div>
+
+      <!-- Mood Statistics -->
+      <div>
+        <h2 class="text-xl font-bold mb-4">Statistik Mood Minggu Ini</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Daily Mood Chart -->
+          <div class="border rounded-lg p-4">
+            <h3 class="font-semibold mb-3">Distribusi Harian</h3>
+            <div class="flex items-end h-48 gap-2">
+              <div v-for="day in weeklyMoodSummary" 
+                   class="flex-1 flex flex-col items-center">
+                <div class="text-xs mb-1">{{ day.day }}</div>
+                <div 
+                  v-for="mood in day.topMoods"
+                  class="w-full chart-bar"
+                  :style="{ 
+                    height: `${(mood.count / day.maxCount) * 100}%`,
+                    backgroundColor: moodOptions[mood.mood].bgColor
+                  }">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Mood Distribution -->
+          <div class="border rounded-lg p-4">
+            <h3 class="font-semibold mb-3">Distribusi Mood</h3>
+            <div class="space-y-2">
+              <div v-for="(count, mood) in moodDistribution" 
+                   class="flex items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center mr-2"
+                     :style="{ backgroundColor: moodOptions[mood].bgColor }">
+                  {{ moodOptions[mood].emoji }}
+                </div>
+                <div class="flex-1">
+                  <div class="flex justify-between text-sm">
+                    <span>{{ moodOptions[mood].label }}</span>
+                    <span>{{ count }} ({{ Math.round((count / moodDistribution.total) * 100) || 0 }}%)</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="h-2 rounded-full" 
+                         :style="{ 
+                           width: `${Math.round((count / moodDistribution.total) * 100) || 0}%`,
+                           backgroundColor: moodOptions[mood].bgColor
+                         }"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mood History -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">📊 Riwayat Mood</h2>
+      
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button @click="setHistoryFilter('all')" 
+                :class="{ 'bg-blue-100': historyFilter === 'all' }"
+                class="px-3 py-1 border rounded-full text-sm">
+          Semua
+        </button>
+        <button v-for="(option, key) in moodOptions" 
+                @click="setHistoryFilter(key)"
+                :class="{ 'bg-blue-100': historyFilter === key }"
+                class="px-3 py-1 border rounded-full text-sm flex items-center">
+          <span class="mr-1">{{ option.emoji }}</span>
+          <span>{{ option.label }}</span>
+        </button>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="text-left border-b">
+              <th class="pb-2">Tanggal</th>
+              <th class="pb-2">Mood</th>
+              <th class="pb-2">Waktu</th>
+              <th class="pb-2">Catatan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="entry in filteredHistory" class="border-b hover:bg-gray-50">
+              <td class="py-3">
+                {{ new Date(entry.timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) }}
+              </td>
+              <td class="py-3">
+                <span class="inline-flex items-center">
+                  <span class="mr-2">{{ moodOptions[entry.mood].emoji }}</span>
+                  {{ moodOptions[entry.mood].label }}
+                </span>
+              </td>
+              <td class="py-3">
+                {{ formatTime(new Date(entry.timestamp)) }}
+              </td>
+              <td class="py-3 max-w-xs truncate">
+                {{ entry.note || '-' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div v-if="filteredHistory.length === 0" class="text-center text-gray-500 py-8">
+          Tidak ada data mood yang sesuai dengan filter
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Modal -->
+    <transition name="fade">
+      <div v-if="showExportModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h2 class="text-xl font-bold mb-4">📤 Export Data Mood</h2>
+          
+          <div class="space-y-4 mb-4">
+            <div>
+              <label class="block mb-2">Format Export</label>
+              <select v-model="exportFormat" class="w-full p-3 border rounded-lg">
+                <option value="json">JSON (Full Data)</option>
+                <option value="csv">CSV (Excel)</option>
+                <option value="pdf">PDF (Printable)</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block mb-2">Rentang Waktu</label>
+              <select v-model="exportRange" class="w-full p-3 border rounded-lg">
+                <option value="today">Hari Ini</option>
+                <option value="week">Minggu Ini</option>
+                <option value="month">Bulan Ini</option>
+                <option value="all">Semua Data</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2">
+            <button @click="showExportModal = false"
+                    class="px-4 py-2 border rounded-lg">
+              Batal
+            </button>
+            <button @click="exportData"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Export
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // App State
+        const currentDate = ref(new Date());
+        const showExportModal = ref(false);
+        const showNotification = ref(false);
+        const notificationMessage = ref('');
+        const notificationClass = ref('');
+        const currentSelectedMood = ref(null);
+        const moodNote = ref('');
+        const historyFilter = ref('all');
+        const exportFormat = ref('json');
+        const exportRange = ref('week');
+        const showAllHistory = ref(false);
+        
+        // Mood Options
+        const moodOptions = {
+          excited: {
+            emoji: '😆',
+            label: 'Sangat Senang',
+            bgColor: '#fef08a'
+          },
+          happy: {
+            emoji: '😊',
+            label: 'Senang',
+            bgColor: '#bbf7d0'
+          },
+          neutral: {
+            emoji: '😐',
+            label: 'Biasa Saja',
+            bgColor: '#e5e7eb'
+          },
+          tired: {
+            emoji: '🥱',
+            label: 'Lelah',
+            bgColor: '#bfdbfe'
+          },
+          anxious: {
+            emoji: '😟',
+            label: 'Cemas',
+            bgColor: '#fecaca'
+          },
+          angry: {
+            emoji: '😠',
+            label: 'Marah',
+            bgColor: '#fca5a5'
+          },
+          sad: {
+            emoji: '😢',
+            label: 'Sedih',
+            bgColor: '#d8b4fe'
+          }
+        };
+        
+        // Mood Data
+        const moodEntries = ref([]);
+        
+        // Computed Properties
+        const isFutureDate = computed(() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return currentDate.value > today;
+        });
+        
+        const todaysMoodEntries = computed(() => {
+          const dateStr = currentDate.value.toISOString().split('T')[0];
+          return moodEntries.value
+            .filter(entry => entry.timestamp.startsWith(dateStr))
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        });
+        
+        const currentMoodEntry = computed(() => {
+          if (todaysMoodEntries.value.length === 0) return null;
+          return todaysMoodEntries.value[0];
+        });
+        
+        const weeklyMoodSummary = computed(() => {
+          const summary = [];
+          const today = new Date(currentDate.value);
+          
+          for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            
+            const dayEntries = moodEntries.value.filter(
+              entry => entry.timestamp.startsWith(dateStr)
+            );
+            
+            const moodCounts = {};
+            dayEntries.forEach(entry => {
+              moodCounts[entry.mood] = (moodCounts[entry.mood] || 0) + 1;
+            });
+            
+            const topMoods = Object.entries(moodCounts)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 3)
+              .map(([mood, count]) => ({ mood, count }));
+            
+            const maxCount = Math.max(...topMoods.map(m => m.count), 1);
+            
+            summary.push({
+              date: dateStr,
+              day: date.toLocaleDateString('id-ID', { weekday: 'short' }),
+              entries: dayEntries,
+              topMoods,
+              maxCount
+            });
+          }
+          
+          return summary;
+        });
+        
+        const moodDistribution = computed(() => {
+          const distribution = {
+            excited: 0,
+            happy: 0,
+            neutral: 0,
+            tired: 0,
+            anxious: 0,
+            angry: 0,
+            sad: 0,
+            total: 0
+          };
+          
+          moodEntries.value.forEach(entry => {
+            distribution[entry.mood]++;
+            distribution.total++;
+          });
+          
+          return distribution;
+        });
+        
+        const filteredHistory = computed(() => {
+          let entries = [...moodEntries.value].reverse();
+          
+          if (historyFilter.value !== 'all') {
+            entries = entries.filter(entry => entry.mood === historyFilter.value);
+          }
+          
+          return entries.slice(0, 50);
+        });
+        
+        // Methods
+        function showNotificationMessage(message, type = 'success') {
+          notificationMessage.value = message;
+          notificationClass.value = type === 'success' 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800';
+          showNotification.value = true;
+          
+          setTimeout(() => {
+            showNotification.value = false;
+          }, 3000);
+        }
+        
+        function formatTime(date) {
+          return date.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
+        
+        function prevDay() {
+          const newDate = new Date(currentDate.value);
+          newDate.setDate(newDate.getDate() - 1);
+          currentDate.value = newDate;
+        }
+        
+        function nextDay() {
+          if (isFutureDate.value) return;
+          
+          const newDate = new Date(currentDate.value);
+          newDate.setDate(newDate.getDate() + 1);
+          currentDate.value = newDate;
+        }
+        
+        function updateCurrentMood(mood) {
+          currentSelectedMood.value = mood;
+        }
+        
+        function saveMoodEntry() {
+          if (!currentSelectedMood.value) {
+            showNotificationMessage('Pilih mood terlebih dahulu', 'error');
+            return;
+          }
+          
+          const newEntry = {
+            id: Date.now().toString(),
+            mood: currentSelectedMood.value,
+            note: moodNote.value.trim(),
+            timestamp: new Date().toISOString()
+          };
+          
+          moodEntries.value.unshift(newEntry);
+          moodNote.value = '';
+          saveData();
+          
+          showNotificationMessage('Mood berhasil dicatat');
+        }
+        
+        function setHistoryFilter(filter) {
+          historyFilter.value = filter;
+        }
+        
+        function exportData() {
+          let dataToExport = [];
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          if (exportRange.value === 'today') {
+            const dateStr = today.toISOString().split('T')[0];
+            dataToExport = moodEntries.value.filter(entry => entry.timestamp.startsWith(dateStr));
+          } else if (exportRange.value === 'week') {
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            dataToExport = moodEntries.value.filter(entry => new Date(entry.timestamp) >= weekAgo);
+          } else if (exportRange.value === 'month') {
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            dataToExport = moodEntries.value.filter(entry => new Date(entry.timestamp) >= monthAgo);
+          } else {
+            dataToExport = [...moodEntries.value];
+          }
+          
+          if (exportFormat.value === 'json') {
+            exportToJSON(dataToExport);
+          } else if (exportFormat.value === 'csv') {
+            exportToCSV(dataToExport);
+          } else {
+            exportToPDF(dataToExport);
+          }
+          
+          showExportModal.value = false;
+        }
+        
+        function exportToJSON(data) {
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `mood-data-${new Date().toISOString().split('T')[0]}.json`;
+          a.click();
+          
+          URL.revokeObjectURL(url);
+          showNotificationMessage('Data mood berhasil diexport ke JSON');
+        }
+        
+        function exportToCSV(data) {
+          let csv = 'Tanggal,Waktu,Mood,Catatan\n';
+          
+          data.forEach(entry => {
+            const date = new Date(entry.timestamp);
+            const dateStr = date.toLocaleDateString('id-ID');
+            const timeStr = formatTime(date);
+            
+            csv += `"${dateStr}","${timeStr}","${moodOptions[entry.mood].label}","${entry.note || ''}"\n`;
+          });
+          
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `mood-data-${new Date().toISOString().split('T')[0]}.csv`;
+          a.click();
+          
+          URL.revokeObjectURL(url);
+          showNotificationMessage('Data mood berhasil diexport ke CSV');
+        }
+        
+        function exportToPDF(data) {
+          // In a real app, you would use a library like jsPDF or a backend service
+          alert('Fitur PDF export membutuhkan integrasi dengan library jsPDF atau backend service');
+        }
+        
+        function saveData() {
+          localStorage.setItem('moodTrackerData', JSON.stringify(moodEntries.value));
+        }
+        
+        function loadData() {
+          const savedData = localStorage.getItem('moodTrackerData');
+          if (savedData) {
+            try {
+              moodEntries.value = JSON.parse(savedData);
+            } catch (error) {
+              console.error('Error loading mood data:', error);
+            }
+          }
+        }
+        
+        // Lifecycle
+        onMounted(() => {
+          loadData();
+        });
+        
+        return {
+          // State
+          currentDate,
+          showExportModal,
+          showNotification,
+          notificationMessage,
+          notificationClass,
+          currentSelectedMood,
+          moodNote,
+          historyFilter,
+          exportFormat,
+          exportRange,
+          showAllHistory,
+          
+          // Data
+          moodOptions,
+          moodEntries,
+          
+          // Computed
+          isFutureDate,
+          todaysMoodEntries,
+          currentMoodEntry,
+          weeklyMoodSummary,
+          moodDistribution,
+          filteredHistory,
+          
+          // Methods
+          showNotificationMessage,
+          formatTime,
+          prevDay,
+          nextDay,
+          updateCurrentMood,
+          saveMoodEntry,
+          setHistoryFilter,
+          exportData
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
