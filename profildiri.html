@@ -656,3 +656,415 @@
               />
             </label>
           </div>
+          <div>
+            <label class="block mb-2">
+              <span class="font-medium text-gray-700">Minat Khusus</span>
+              <input 
+                type="text" 
+                v-model="formData.minatKhusus" 
+                placeholder="Minat atau ketertarikan khusus"
+                class="form-input mt-1 block w-full rounded-md shadow-sm p-3"
+              />
+            </label>
+          </div>
+
+          <div>
+            <label class="block mb-2">
+              <span class="font-medium text-gray-700">Olahraga yang Disukai</span>
+              <input 
+                type="text" 
+                v-model="formData.olahraga" 
+                placeholder="Jenis olahraga favorit"
+                class="form-input mt-1 block w-full rounded-md shadow-sm p-3"
+              />
+            </label>
+          </div>
+
+          <div>
+            <label class="block mb-2">
+              <span class="font-medium text-gray-700">Genre Musik/Film Favorit</span>
+              <input 
+                type="text" 
+                v-model="formData.genreFavorit" 
+                placeholder="Genre yang paling disukai"
+                class="form-input mt-1 block w-full rounded-md shadow-sm p-3"
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Tambahan -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">📌 Data Tambahan</h2>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-2">
+              <span class="font-medium text-gray-700">Kemampuan Bahasa Asing</span>
+              <input 
+                type="text" 
+                v-model="formData.bahasaAsing" 
+                placeholder="Bahasa asing yang dikuasai"
+                class="form-input mt-1 block w-full rounded-md shadow-sm p-3"
+              />
+            </label>
+          </div>
+
+          <div>
+            <label class="block mb-2">
+              <span class="font-medium text-gray-700">Keahlian Khusus</span>
+              <input 
+                type="text" 
+                v-model="formData.keahlianKhusus" 
+                placeholder="Keahlian atau skill khusus"
+                class="form-input mt-1 block w-full rounded-md shadow-sm p-3"
+              />
+            </label>
+          </div>
+
+          <div>
+            <label class="block mb-2">
+              <span class="font-medium text-gray-700">Organisasi yang Diikuti</span>
+              <input 
+                type="text" 
+                v-model="formData.organisasi" 
+                placeholder="Organisasi atau komunitas"
+                class="form-input mt-1 block w-full rounded-md shadow-sm p-3"
+              />
+            </label>
+          </div>
+
+          <div>
+            <label class="block mb-2">
+              <span class="font-medium text-gray-700">Prestasi Penting</span>
+              <input 
+                type="text" 
+                v-model="formData.prestasi" 
+                placeholder="Prestasi yang pernah diraih"
+                class="form-input mt-1 block w-full rounded-md shadow-sm p-3"
+              />
+            </label>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block mb-2">
+              <span class="font-medium text-gray-700">Catatan Tambahan</span>
+              <textarea 
+                v-model="formData.catatanTambahan" 
+                rows="3"
+                placeholder="Informasi tambahan yang ingin disampaikan"
+                class="form-input mt-1 block w-full rounded-md shadow-sm p-3"
+              ></textarea>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="text-center">
+        <button
+          type="submit"
+          class="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 px-8 rounded-lg hover:from-purple-700 hover:to-blue-700 transition duration-300 shadow-lg transform hover:scale-105"
+        >
+          📋 Generate Data Pribadi
+        </button>
+      </div>
+    </form>
+
+    <!-- Results -->
+    <div v-if="result" class="mt-8 bg-white rounded-lg shadow-lg p-6 result-box">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">📋 Hasil Data Pribadi</h2>
+      
+      <!-- Summary Cards -->
+      <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-purple-50 p-4 rounded-lg text-center">
+          <div class="text-2xl font-bold text-purple-600">{{ formData.namaLengkap }}</div>
+          <div class="text-purple-800">Nama Lengkap</div>
+        </div>
+        <div class="bg-blue-50 p-4 rounded-lg text-center">
+          <div class="text-2xl font-bold text-blue-600">{{ currentAge }}</div>
+          <div class="text-blue-800">Usia</div>
+        </div>
+        <div class="bg-green-50 p-4 rounded-lg text-center">
+          <div class="text-2xl font-bold text-green-600">{{ formData.pekerjaan }}</div>
+          <div class="text-green-800">Pekerjaan</div>
+        </div>
+      </div>
+
+      <!-- Detailed Report -->
+      <div class="bg-gray-50 rounded-lg p-4">
+        <h3 class="font-bold mb-3">📄 Laporan Lengkap:</h3>
+        <textarea
+          readonly
+          class="w-full h-64 p-4 rounded-md border border-gray-300 font-mono text-sm bg-white resize-none"
+          :value="result"
+        ></textarea>
+      </div>
+
+      <!-- Copy Button -->
+      <div class="text-center mt-4">
+        <button
+          @click="copyResult"
+          class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition"
+        >
+          📋 Salin Hasil
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, reactive } = Vue;
+
+    createApp({
+      setup() {
+        // Form data
+        const formData = reactive({
+          // Identitas
+          namaLengkap: "",
+          namaPanggilan: "",
+          nik: "",
+          tanggalLahir: "",
+          tempatLahir: "",
+          jenisKelamin: "",
+          
+          // Keluarga & Status
+          statusPernikahan: "",
+          namaPasangan: "",
+          jumlahAnak: 0,
+          anakKe: 1,
+          namaAyah: "",
+          namaIbu: "",
+          
+          // Asal & Suku
+          suku: "",
+          provinsiAsal: "",
+          kotaAsal: "",
+          bahasaDaerah: "",
+          
+          // Agama
+          agama: "",
+          mazhab: "",
+          religiusitas: "",
+          
+          // Tempat Tinggal
+          alamatLengkap: "",
+          provinsiTinggal: "",
+          kotaTinggal: "",
+          kodePos: "",
+          statusTinggal: "",
+          lamaTinggal: 0,
+          
+          // Pendidikan & Pekerjaan
+          pendidikan: "",
+          jurusan: "",
+          pekerjaan: "",
+          bidangUsaha: "",
+          penghasilan: "",
+          
+          // Kontak
+          noTelepon: "",
+          email: "",
+          mediaSosial: "",
+          kontakDarurat: "",
+          
+          // Kesehatan
+          golonganDarah: "",
+          rhesus: "",
+          tinggiBadan: 0,
+          beratBadan: 0,
+          riwayatPenyakit: "",
+          
+          // Hobi & Minat
+          hobiUtama: "",
+          minatKhusus: "",
+          olahraga: "",
+          genreFavorit: "",
+          
+          // Tambahan
+          bahasaAsing: "",
+          keahlianKhusus: "",
+          organisasi: "",
+          prestasi: "",
+          catatanTambahan: ""
+        });
+
+        // Options for dropdowns
+        const sukuOptions = [
+          "Jawa", "Sunda", "Batak", "Minangkabau", "Betawi", "Bugis", "Melayu", 
+          "Madura", "Banjar", "Bali", "Aceh", "Dayak", "Sasak", "Toraja", "Tionghoa",
+          "Arab", "India", "Lainnya"
+        ];
+
+        const provinsiOptions = [
+          "Aceh", "Sumatera Utara", "Sumatera Barat", "Riau", "Jambi", "Sumatera Selatan",
+          "Bengkulu", "Lampung", "Kep. Bangka Belitung", "Kep. Riau", "DKI Jakarta",
+          "Jawa Barat", "Jawa Tengah", "DI Yogyakarta", "Jawa Timur", "Banten",
+          "Bali", "Nusa Tenggara Barat", "Nusa Tenggara Timur", "Kalimantan Barat",
+          "Kalimantan Tengah", "Kalimantan Selatan", "Kalimantan Timur", "Kalimantan Utara",
+          "Sulawesi Utara", "Sulawesi Tengah", "Sulawesi Selatan", "Sulawesi Tenggara",
+          "Gorontalo", "Sulawesi Barat", "Maluku", "Maluku Utara", "Papua Barat", "Papua"
+        ];
+
+        // Results
+        const result = ref("");
+
+        // Computed properties
+        const currentAge = computed(() => {
+          if (!formData.tanggalLahir) return null;
+          const today = new Date();
+          const birthDate = new Date(formData.tanggalLahir);
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          return age > 0 ? age : null;
+        });
+
+        const bmi = computed(() => {
+          if (!formData.tinggiBadan || !formData.beratBadan) return null;
+          const heightInMeters = formData.tinggiBadan / 100;
+          return (formData.beratBadan / (heightInMeters * heightInMeters)).toFixed(1);
+        });
+
+        const bmiCategory = computed(() => {
+          if (!bmi.value) return "";
+          const bmiValue = parseFloat(bmi.value);
+          if (bmiValue < 18.5) return "Underweight";
+          if (bmiValue < 25) return "Normal";
+          if (bmiValue < 30) return "Overweight";
+          return "Obese";
+        });
+
+        const progressPercentage = computed(() => {
+          let filled = 0;
+          const totalFields = Object.keys(formData).length;
+          const filledFields = Object.values(formData).filter(value => {
+            if (Array.isArray(value)) return value.length > 0;
+            return value !== "" && value !== 0 && value !== null;
+          }).length;
+          
+          return Math.round((filledFields / totalFields) * 100);
+        });
+
+        // Methods
+        function formatDate(dateString) {
+          if (!dateString) return "";
+          const date = new Date(dateString);
+          return date.toLocaleDateString('id-ID', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        }
+
+        function generateOutput() {
+          if (!formData.namaLengkap || !formData.tanggalLahir) {
+            alert("Mohon isi nama lengkap dan tanggal lahir terlebih dahulu.");
+            return;
+          }
+
+          result.value = `
+DATA PRIBADI LENGKAP
+====================
+
+👤 IDENTITAS PRIBADI
+Nama Lengkap       : ${formData.namaLengkap}
+Nama Panggilan     : ${formData.namaPanggilan || "-"}
+NIK                : ${formData.nik || "-"}
+Tempat/Tgl Lahir   : ${formData.tempatLahir || "-"}, ${formatDate(formData.tanggalLahir)}
+Jenis Kelamin      : ${formData.jenisKelamin || "-"}
+Umur               : ${currentAge.value || "-"} tahun
+
+👨‍👩‍👧‍👦 DATA KELUARGA
+Status Pernikahan  : ${formData.statusPernikahan || "-"}
+Nama Pasangan      : ${formData.namaPasangan || "-"}
+Jumlah Anak        : ${formData.jumlahAnak || "0"}
+Anak ke-           : ${formData.anakKe || "-"}
+Nama Ayah          : ${formData.namaAyah || "-"}
+Nama Ibu           : ${formData.namaIbu || "-"}
+
+🏛️ ASAL USUL
+Suku/Etnis         : ${formData.suku || "-"}
+Provinsi Asal      : ${formData.provinsiAsal || "-"}
+Kota/Kab. Asal     : ${formData.kotaAsal || "-"}
+Bahasa Daerah      : ${formData.bahasaDaerah || "-"}
+
+🕌 AGAMA & KEPERCAYAAN
+Agama              : ${formData.agama || "-"}
+Mazhab/Aliran      : ${formData.mazhab || "-"}
+Tingkat Religius   : ${formData.religiusitas || "-"}
+
+🏠 TEMPAT TINGGAL
+Alamat Lengkap     : ${formData.alamatLengkap || "-"}
+Provinsi Tinggal   : ${formData.provinsiTinggal || "-"}
+Kota/Kab. Tinggal  : ${formData.kotaTinggal || "-"}
+Kode Pos           : ${formData.kodePos || "-"}
+Status Tempat Tinggal : ${formData.statusTinggal || "-"}
+Lama Tinggal       : ${formData.lamaTinggal || "0"} tahun
+
+🎓 PENDIDIKAN & PEKERJAAN
+Pendidikan Terakhir: ${formData.pendidikan || "-"}
+Jurusan/Bidang     : ${formData.jurusan || "-"}
+Pekerjaan          : ${formData.pekerjaan || "-"}
+Bidang Usaha       : ${formData.bidangUsaha || "-"}
+Penghasilan        : ${formData.penghasilan || "-"}
+
+📞 KONTAK
+Telepon/HP         : ${formData.noTelepon || "-"}
+Email              : ${formData.email || "-"}
+Media Sosial       : ${formData.mediaSosial || "-"}
+Kontak Darurat     : ${formData.kontakDarurat || "-"}
+
+⚕️ KESEHATAN
+Golongan Darah     : ${formData.golonganDarah || "-"} ${formData.rhesus || ""}
+Tinggi Badan       : ${formData.tinggiBadan || "-"} cm
+Berat Badan        : ${formData.beratBadan || "-"} kg
+BMI                : ${bmi.value || "-"} (${bmiCategory.value || "-"})
+Riwayat Penyakit   : ${formData.riwayatPenyakit || "-"}
+
+🎨 HOBI & MINAT
+Hobi Utama         : ${formData.hobiUtama || "-"}
+Minat Khusus       : ${formData.minatKhusus || "-"}
+Olahraga Favorit   : ${formData.olahraga || "-"}
+Genre Favorit      : ${formData.genreFavorit || "-"}
+
+📌 TAMBAHAN
+Bahasa Asing       : ${formData.bahasaAsing || "-"}
+Keahlian Khusus    : ${formData.keahlianKhusus || "-"}
+Organisasi         : ${formData.organisasi || "-"}
+Prestasi           : ${formData.prestasi || "-"}
+Catatan Tambahan   : ${formData.catatanTambahan || "-"}
+
+Dibuat pada: ${new Date().toLocaleString('id-ID')}
+          `.trim();
+        }
+
+        function copyResult() {
+          navigator.clipboard.writeText(result.value).then(() => {
+            alert("Data pribadi berhasil disalin ke clipboard!");
+          }).catch(() => {
+            alert("Gagal menyalin. Silakan salin manual.");
+          });
+        }
+
+        return {
+          formData,
+          sukuOptions,
+          provinsiOptions,
+          result,
+          currentAge,
+          bmi,
+          bmiCategory,
+          progressPercentage,
+          generateOutput,
+          copyResult
+        };
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>
