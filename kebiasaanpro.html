@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pelacak Kebiasaan Premium</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .habit-card {
+      transition: all 0.3s ease;
+    }
+    .habit-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .streak-active {
+      background-color: #ecfdf5;
+      border-left: 4px solid #10b981;
+    }
+    .modal-overlay {
+      background-color: rgba(0,0,0,0.5);
+    }
+    .progress-bar {
+      transition: width 0.5s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .fade-in {
+      animation: fadeIn 0.3s forwards;
+    }
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div id="app" class="container mx-auto p-4 max-w-4xl">
+    <!-- Notification -->
+    <div v-if="showNotification" class="notification fade-in">
+      <div :class="notificationClass" class="px-6 py-3 rounded-lg shadow-lg">
+        {{ notificationMessage }}
+      </div>
+    </div>
+
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">🌟 Pelacak Kebiasaan Premium</h1>
+      <p class="text-gray-600">Lacak, analisis, dan tingkatkan kebiasaanmu</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <!-- Habit Input -->
+      <div class="mb-8">
+        <h2 class="text-xl font-bold mb-3 border-b pb-2">➕ Tambah Kebiasaan Baru</h2>
+        <div class="flex flex-col md:flex-row gap-3">
+          <input
+            v-model="newHabit.name"
+            type="text"
+            placeholder="Nama kebiasaan (misal: Minum air 8 gelas)"
+            class="flex-1 p-3 border rounded-lg"
+          >
+          <select v-model="newHabit.frequency" class="p-3 border rounded-lg">
+            <option value="daily">Harian</option>
+            <option value="weekly">Mingguan</option>
+            <option value="monthly">Bulanan</option>
+          </select>
+          <select v-model="newHabit.target" class="p-3 border rounded-lg">
+            <option value="1">1 kali</option>
+            <option value="2">2 kali</option>
+            <option value="3">3 kali</option>
+            <option value="5">5 kali</option>
+            <option value="7">7 kali</option>
+          </select>
+          <button
+            @click="addHabit"
+            class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+          >
+            Tambah
+          </button>
+        </div>
+      </div>
+
+      <!-- Habit Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <div class="text-2xl font-bold text-blue-600">{{ activeHabitsCount }}</div>
+          <div class="text-blue-800">Kebiasaan Aktif</div>
+        </div>
+        <div class="bg-green-50 p-4 rounded-lg">
+          <div class="text-2xl font-bold text-green-600">{{ completedTodayCount }}</div>
+          <div class="text-green-800">Selesai Hari Ini</div>
+        </div>
+        <div class="bg-purple-50 p-4 rounded-lg">
+          <div class="text-2xl font-bold text-purple-600">{{ bestStreak }}</div>
+          <div class="text-purple-800">Streak Terbaik</div>
+        </div>
+        <div class="bg-yellow-50 p-4 rounded-lg">
+          <div class="text-2xl font-bold text-yellow-600">{{ successRate }}%</div>
+          <div class="text-yellow-800">Tingkat Kesuksesan</div>
+        </div>
+      </div>
+
+      <!-- Date Navigation -->
+      <div class="flex justify-between items-center mb-6">
+        <button @click="prevDay" class="p-2 rounded-full hover:bg-gray-100">
+          ◀
+        </button>
+        <div class="text-lg font-medium">
+          {{ currentDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}
+        </div>
+        <button @click="nextDay" class="p-2 rounded-full hover:bg-gray-100" :disabled="isFutureDate">
+          ▶
+        </button>
+      </div>
+
+      <!-- Habit Filter -->
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button
+          @click="setFilter('all')"
+          :class="{'bg-blue-100': filter === 'all'}"
+          class="px-3 py-1 border rounded-full text-sm"
+        >
+          Semua
+        </button>
+        <button
+          @click="setFilter('active')"
+          :class="{'bg-green-100': filter === 'active'}"
+          class="px-3 py-1 border rounded-full text-sm"
+        >
+          Aktif
+        </button>
+        <button
+          @click="setFilter('completed')"
+          :class="{'bg-purple-100': filter === 'completed'}"
+          class="px-3 py-1 border rounded-full text-sm"
+        >
+          Selesai
+        </button>
+        <button
+          @click="setFilter('streak')"
+          :class="{'bg-red-100': filter === 'streak'}"
+          class="px-3 py-1 border rounded-full text-sm"
+        >
+          Streak > 3
+        </button>
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Cari kebiasaan..."
+          class="ml-auto px-3 py-1 border rounded-full text-sm"
+        >
+      </div>
+
+      <!-- Habit List -->
+      <div>
+        <h2 class="text-xl font-bold mb-3 border-b pb-2">📋 Daftar Kebiasaan</h2>
+        
+        <div v-if="filteredHabits.length === 0" class="text-center py-8 text-gray-500">
+          Tidak ada kebiasaan yang sesuai dengan filter
+        </div>
+        
+        <div v-else class="space-y-4">
+          <div 
+            v-for="(habit, index) in filteredHabits" 
+            :key="habit.id"
+            :class="{'streak-active': habit.currentStreak > 0}"
+            class="habit-card p-4 rounded-lg border"
+          >
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+              <!-- Habit Info -->
+              <div class="flex-1">
+                <div class="flex items-center gap-3">
+                  <h3 class="font-bold text-lg">{{ habit.name }}</h3>
+                  <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">
+                    {{ formatFrequency(habit.frequency) }}
+                  </span>
+                  <span v-if="habit.currentStreak > 3" class="text-xs bg-red-100 px-2 py-1 rounded-full">
+                    🔥 {{ habit.currentStreak }} hari
+                  </span>
+                </div>
+                <div class="text-sm text-gray-500 mt-1">
+                  Target: {{ habit.target }}x {{ formatFrequency(habit.frequency) }} | 
+                  Dibuat: {{ formatDate(habit.createdAt) }}
+                </div>
+              </div>
+              
+              <!-- Progress Tracking -->
+              <div class="flex items-center gap-3">
+                <!-- Streak Info -->
+                <div class="text-center min-w-[60px]">
+                  <div class="text-xs text-gray-500">Streak</div>
+                  <div class="font-bold" :class="{'text-green-600': habit.currentStreak > 0}">
+                    {{ habit.currentStreak }}
+                  </div>
+                </div>
+                
+                <!-- Completion -->
+                <div class="flex items-center gap-2">
+                  <button
+                    v-for="n in parseInt(habit.target)"
+                    :key="n"
+                    @click="toggleHabitCompletion(habit.id, n)"
+                    class="w-8 h-8 rounded-full border flex items-center justify-center"
+                    :class="{
+                      'bg-green-100 border-green-300': isHabitCompleted(habit.id, n),
+                      'bg-gray-50 border-gray-200': !isHabitCompleted(habit.id, n)
+                    }"
+                  >
+                    {{ isHabitCompleted(habit.id, n) ? '✓' : n }}
+                  </button>
+                </div>
+                
+                <!-- Habit Actions -->
+                <div class="flex gap-2">
+                  <button
+                    @click="showEditModal(habit)"
+                    class="text-blue-500 p-1"
+                    title="Edit"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    @click="showDeleteModal(habit.id)"
+                    class="text-red-500 p-1"
+                    title="Hapus"
+                  >
+                    ✕
+                  </button>
+                  <button
+                    @click="showHistoryModal(habit)"
+                    class="text-purple-500 p-1"
+                    title="Riwayat"
+                  >
+                    📅
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="mt-3">
+              <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Progress</span>
+                <span>{{ completionCount(habit.id) }}/{{ habit.target }}</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  class="progress-bar bg-blue-600 h-2 rounded-full"
+                  :style="{ width: (completionCount(habit.id) / habit.target * 100) + '%' }"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Management Section -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <h2 class="text-xl font-bold mb-3 border-b pb-2">🔧 Manajemen Data</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <button
+          @click="exportToJSON"
+          class="p-3 bg-green-50 text-green-800 rounded-lg hover:bg-green-100 transition"
+        >
+          💾 Export JSON
+        </button>
+        <button
+          @click="exportToCSV"
+          class="p-3 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100 transition"
+        >
+          📊 Export CSV
+        </button>
+        <button
+          @click="showImportModal = true"
+          class="p-3 bg-purple-50 text-purple-800 rounded-lg hover:bg-purple-100 transition"
+        >
+          📥 Import Data
+        </button>
+        <button
+          @click="showResetConfirm = true"
+          class="p-3 bg-red-50 text-red-800 rounded-lg hover:bg-red-100 transition"
+        >
+          🗑️ Reset Data
+        </button>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6" v-if="habits.length > 0">
+      <h2 class="text-xl font-bold mb-3 border-b pb-2">📈 Statistik Kebiasaan</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="border p-4 rounded-lg">
+          <h3 class="font-medium mb-2">Kebiasaan Terselesaikan (7 hari terakhir)</h3>
+          <div class="h-64 flex items-end gap-2">
+            <div 
+              v-for="(day, index) in last7Days" 
+              :key="index"
+              class="flex-1 flex flex-col items-center"
+            >
+              <div 
+                class="bg-blue-500 w-full rounded-t-sm"
+                :style="{ height: (day.completed / maxCompleted) * 100 + '%' }"
+              ></div>
+              <div class="text-xs mt-1">{{ day.day }}</div>
+              <div class="text-xs font-medium">{{ day.completed }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="border p-4 rounded-lg">
+          <h3 class="font-medium mb-2">Distribusi Streak</h3>
+          <div class="h-64 flex items-end gap-2">
+            <div 
+              v-for="streak in streakDistribution" 
+              :key="streak.range"
+              class="flex-1 flex flex-col items-center"
+            >
+              <div 
+                class="bg-green-500 w-full rounded-t-sm"
+                :style="{ height: (streak.count / maxStreakCount) * 100 + '%' }"
+              ></div>
+              <div class="text-xs mt-1">{{ streak.range }}</div>
+              <div class="text-xs font-medium">{{ streak.count }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div v-if="showModal" class="fixed inset-0 flex items-center justify-center z-50 modal-overlay fade-in">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h2 class="text-xl font-bold mb-4">{{ editingHabit ? '✏️ Edit Kebiasaan' : '➕ Tambah Kebiasaan' }}</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block mb-2">Nama Kebiasaan</label>
+            <input
+              v-model="modalHabit.name"
+              type="text"
+              class="w-full p-3 border rounded-lg"
+            >
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block mb-2">Frekuensi</label>
+              <select v-model="modalHabit.frequency" class="w-full p-3 border rounded-lg">
+                <option value="daily">Harian</option>
+                <option value="weekly">Mingguan</option>
+                <option value="monthly">Bulanan</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block mb-2">Target</label>
+              <select v-model="modalHabit.target" class="w-full p-3 border rounded-lg">
+                <option value="1">1 kali</option>
+                <option value="2">2 kali</option>
+                <option value="3">3 kali</option>
+                <option value="5">5 kali</option>
+                <option value="7">7 kali</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-2 mt-6">
+          <button
+            @click="showModal = false"
+            class="px-4 py-2 border rounded-lg"
+          >
+            Batal
+          </button>
+          <button
+            @click="saveHabit"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg"
+          >
+            Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Modal -->
+    <div v-if="showHistoryModal" class="fixed inset-0 flex items-center justify-center z-50 modal-overlay fade-in">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-auto">
+        <h2 class="text-xl font-bold mb-4">📅 Riwayat: {{ selectedHabit.name }}</h2>
+        
+        <div class="mb-4">
+          <div class="flex justify-between mb-1">
+            <span class="font-medium">Total Penyelesaian: {{ habitHistory.length }}</span>
+            <span class="font-medium">Streak: {{ selectedHabit.currentStreak }} hari</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div
+              class="progress-bar bg-blue-600 h-2 rounded-full"
+              :style="{ width: (habitHistory.length / (selectedHabit.target * 30)) * 100 + '%' }"
+            ></div>
+          </div>
+          <div class="text-xs text-gray-500 mt-1">Target 30 hari: {{ selectedHabit.target * 30 }}x</div>
+        </div>
+        
+        <div class="space-y-2">
+          <div 
+            v-for="day in habitHistory.slice().reverse()"
+            :key="day.date"
+            class="p-2 border rounded-lg"
+          >
+            <div class="font-medium">
+              {{ formatFullDate(new Date(day.date)) }}
+            </div>
+            <div class="text-sm text-gray-500">
+              Diselesaikan {{ day.count }}x pada jam: 
+              <span v-for="(time, idx) in day.times" :key="idx">
+                {{ formatTime(new Date(time)) }}{{ idx < day.times.length - 1 ? ', ' : '' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end mt-4">
+          <button
+            @click="showHistoryModal = false"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div v-if="showImportModal" class="fixed inset-0 flex items-center justify-center z-50 modal-overlay fade-in">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h2 class="text-xl font-bold mb-4">📥 Import Data</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block mb-2">Pilih file JSON:</label>
+            <input
+              type="file"
+              ref="fileInput"
+              accept=".json"
+              @change="handleFileImport"
+              class="w-full p-2 border rounded-lg"
+            >
+          </div>
+          
+          <div>
+            <label class="flex items-center">
+              <input v-model="importMode" type="radio" value="replace" class="mr-2">
+              <span>Ganti semua data yang ada</span>
+            </label>
+            <label class="flex items-center mt-2">
+              <input v-model="importMode" type="radio" value="merge" class="mr-2">
+              <span>Gabungkan dengan data yang ada</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-2 mt-6">
+          <button
+            @click="showImportModal = false"
+            class="px-4 py-2 border rounded-lg"
+          >
+            Batal
+          </button>
+          <button
+            @click="confirmImport"
+            :disabled="!importData"
+            :class="{'bg-gray-400': !importData, 'bg-blue-600': importData}"
+            class="px-4 py-2 text-white rounded-lg"
+          >
+            Import
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 flex items-center justify-center z-50 modal-overlay fade-in">
+      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h2 class="text-xl font-bold mb-4">⚠️ Reset Semua Data</h2>
+        <p class="mb-6">Apakah kamu yakin ingin menghapus semua data kebiasaan? Aksi ini tidak dapat dibatalkan.</p>
+        
+        <div class="flex justify-end gap-2">
+          <button
+            @click="showResetConfirm = false"
+            class="px-4 py-2 border rounded-lg"
+          >
+            Batal
+          </button>
+          <button
+            @click="resetAllData"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg"
+          >
+            Ya, Reset Semua
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // App State
+        const currentDate = ref(new Date());
+        const showModal = ref(false);
+        const showHistoryModal = ref(false);
+        const showImportModal = ref(false);
+        const showResetConfirm = ref(false);
+        const editingHabit = ref(null);
+        const selectedHabit = ref(null);
+        const filter = ref('all');
+        const searchQuery = ref('');
+        const importMode = ref('replace');
+        const importData = ref(null);
+        const fileInput = ref(null);
+        
+        // Notification
+        const showNotification = ref(false);
+        const notificationMessage = ref('');
+        const notificationClass = ref('');
+        
+        // Data
+        const newHabit = reactive({
+          name: '',
+          frequency: 'daily',
+          target: '1'
+        });
+        
+        const modalHabit = reactive({
+          name: '',
+          frequency: 'daily',
+          target: '1'
+        });
+        
+        const habits = ref([]);
+        const completions = ref([]);
+        
+        // Computed
+        const activeHabitsCount = computed(() => {
+          return habits.value.length;
+        });
+        
+        const completedTodayCount = computed(() => {
+          const today = formatDateKey(currentDate.value);
+          return completions.value.filter(c => c.date === today).length;
+        });
+        
+        const bestStreak = computed(() => {
+          if (habits.value.length === 0) return 0;
+          return Math.max(...habits.value.map(h => h.bestStreak));
+        });
+        
+        const successRate = computed(() => {
+          if (habits.value.length === 0) return 0;
+          
+          const totalPossible = habits.value.reduce((sum, habit) => {
+            const daysSinceCreation = Math.floor((new Date() - new Date(habit.createdAt)) / (1000 * 60 * 60 * 24));
+            return sum + (habit.target * Math.min(daysSinceCreation, 30));
+          }, 0);
+          
+          const totalCompleted = completions.value.length;
+          
+          return Math.round((totalCompleted / totalPossible) * 100) || 0;
+        });
+        
+        const isFutureDate = computed(() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return currentDate.value > today;
+        });
+        
+        const filteredHabits = computed(() => {
+          let result = habits.value;
+          
+          // Apply search filter
+          if (searchQuery.value) {
+            const query = searchQuery.value.toLowerCase();
+            result = result.filter(habit => 
+              habit.name.toLowerCase().includes(query)
+            );
+          }
+          
+          // Apply status filter
+          switch (filter.value) {
+            case 'active':
+              return result.filter(habit => completionCount(habit.id) < habit.target);
+            case 'completed':
+              return result.filter(habit => completionCount(habit.id) >= habit.target);
+            case 'streak':
+              return result.filter(habit => habit.currentStreak > 3);
+            default:
+              return result;
+          }
+        });
+        
+        const habitHistory = computed(() => {
+          if (!selectedHabit.value) return [];
+          
+          const historyMap = {};
+          completions.value
+            .filter(c => c.habitId === selectedHabit.value.id)
+            .forEach(c => {
+              if (!historyMap[c.date]) {
+                historyMap[c.date] = {
+                  date: c.date,
+                  count: 0,
+                  times: []
+                };
+              }
+              historyMap[c.date].count++;
+              historyMap[c.date].times.push(c.completedAt);
+            });
+          
+          return Object.values(historyMap).sort((a, b) => 
+            new Date(b.date) - new Date(a.date)
+          );
+        });
+        
+        const last7Days = computed(() => {
+          const days = [];
+          const today = new Date();
+          
+          for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateKey = formatDateKey(date);
+            
+            const completed = completions.value.filter(
+              c => c.date === dateKey
+            ).length;
+            
+            days.push({
+              day: date.toLocaleDateString('id-ID', { weekday: 'short' }),
+              date: dateKey,
+              completed
+            });
+          }
+          
+          return days;
+        });
+        
+        const maxCompleted = computed(() => {
+          return Math.max(1, ...last7Days.value.map(d => d.completed));
+        });
+        
+        const streakDistribution = computed(() => {
+          const distribution = [
+            { range: '0', count: 0 },
+            { range: '1-3', count: 0 },
+            { range: '4-7', count: 0 },
+            { range: '8-14', count: 0 },
+            { range: '15+', count: 0 }
+          ];
+          
+          habits.value.forEach(habit => {
+            if (habit.currentStreak === 0) {
+              distribution[0].count++;
+            } else if (habit.currentStreak <= 3) {
+              distribution[1].count++;
+            } else if (habit.currentStreak <= 7) {
+              distribution[2].count++;
+            } else if (habit.currentStreak <= 14) {
+              distribution[3].count++;
+            } else {
+              distribution[4].count++;
+            }
+          });
+          
+          return distribution;
+        });
+        
+        const maxStreakCount = computed(() => {
+          return Math.max(1, ...streakDistribution.value.map(d => d.count));
+        });
+        
+        // Methods
+        function showNotificationMessage(message, type = 'success') {
+          notificationMessage.value = message;
+          notificationClass.value = type === 'success' 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800';
+          showNotification.value = true;
+          
+          setTimeout(() => {
+            showNotification.value = false;
+          }, 3000);
+        }
+        
+        function formatDateKey(date) {
+          return date.toISOString().split('T')[0];
+        }
+        
+        function formatDate(dateString) {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
+        
+        function formatFullDate(date) {
+          return date.toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          });
+        }
+        
+        function formatTime(date) {
+          return date.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
+        
+        function formatFrequency(freq) {
+          const map = {
+            daily: 'per hari',
+            weekly: 'per minggu',
+            monthly: 'per bulan'
+          };
+          return map[freq] || freq;
+        }
+        
+        function isHabitCompleted(habitId, instance) {
+          const today = formatDateKey(currentDate.value);
+          return completions.value.some(
+            c => c.habitId === habitId && 
+                 c.date === today && 
+                 c.instance === instance
+          );
+        }
+        
+        function completionCount(habitId) {
+          const today = formatDateKey(currentDate.value);
+          return completions.value.filter(
+            c => c.habitId === habitId && c.date === today
+          ).length;
+        }
+        
+        function setFilter(type) {
+          filter.value = type;
+        }
+        
+        function addHabit() {
+          if (!newHabit.name.trim()) {
+            showNotificationMessage('Nama kebiasaan tidak boleh kosong', 'error');
+            return;
+          }
+          
+          const habit = {
+            id: Date.now().toString(),
+            name: newHabit.name.trim(),
+            frequency: newHabit.frequency,
+            target: parseInt(newHabit.target),
+            createdAt: new Date(),
+            currentStreak: 0,
+            bestStreak: 0
+          };
+          
+          habits.value.push(habit);
+          newHabit.name = '';
+          saveData();
+          
+          showNotificationMessage('Kebiasaan berhasil ditambahkan');
+        }
+        
+        function showEditModal(habit) {
+          editingHabit.value = habit.id;
+          modalHabit.name = habit.name;
+          modalHabit.frequency = habit.frequency;
+          modalHabit.target = habit.target.toString();
+          showModal.value = true;
+        }
+        
+        function saveHabit() {
+          if (!modalHabit.name.trim()) {
+            showNotificationMessage('Nama kebiasaan tidak boleh kosong', 'error');
+            return;
+          }
+          
+          if (editingHabit.value) {
+            // Update existing habit
+            const index = habits.value.findIndex(h => h.id === editingHabit.value);
+            if (index !== -1) {
+              habits.value[index].name = modalHabit.name.trim();
+              habits.value[index].frequency = modalHabit.frequency;
+              habits.value[index].target = parseInt(modalHabit.target);
+            }
+          } else {
+            // Add new habit
+            addHabit();
+          }
+          
+          showModal.value = false;
+          saveData();
+          showNotificationMessage('Kebiasaan berhasil disimpan');
+        }
+        
+        function showDeleteModal(habitId) {
+          habitToDelete.value = habitId;
+          showResetConfirm.value = true;
+        }
+        
+        function toggleHabitCompletion(habitId, instance) {
+          const today = formatDateKey(currentDate.value);
+          const index = completions.value.findIndex(
+            c => c.habitId === habitId && 
+                 c.date === today && 
+                 c.instance === instance
+          );
+          
+          if (index === -1) {
+            // Add completion
+            completions.value.push({
+              id: Date.now().toString(),
+              habitId,
+              date: today,
+              instance,
+              completedAt: new Date()
+            });
+            
+            // Check if this completes the habit for today
+            checkStreak(habitId);
+          } else {
+            // Remove completion
+            completions.value.splice(index, 1);
+          }
+          
+          saveData();
+        }
+        
+        function checkStreak(habitId) {
+          const habit = habits.value.find(h => h.id === habitId);
+          if (!habit) return;
+          
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          // Check if habit was completed every day in the current streak
+          let streakBroken = false;
+          let currentStreak = 0;
+          
+          while (!streakBroken) {
+            const checkDate = new Date(today);
+            checkDate.setDate(checkDate.getDate() - currentStreak);
+            
+            const dateKey = formatDateKey(checkDate);
+            const completionsCount = completions.value.filter(
+              c => c.habitId === habitId && c.date === dateKey
+            ).length;
+            
+            if (completionsCount >= habit.target) {
+              currentStreak++;
+            } else {
+              streakBroken = true;
+            }
+          }
+          
+          // Update streak info
+          habit.currentStreak = currentStreak;
+          if (currentStreak > habit.bestStreak) {
+            habit.bestStreak = currentStreak;
+          }
+        }
+        
+        function prevDay() {
+          const newDate = new Date(currentDate.value);
+          newDate.setDate(newDate.getDate() - 1);
+          currentDate.value = newDate;
+        }
+        
+        function nextDay() {
+          if (isFutureDate.value) return;
+          
+          const newDate = new Date(currentDate.value);
+          newDate.setDate(newDate.getDate() + 1);
+          currentDate.value = newDate;
+        }
+        
+        function showHistory(habit) {
+          selectedHabit.value = habit;
+          showHistoryModal.value = true;
+        }
+        
+        function exportToJSON() {
+          const data = {
+            habits: habits.value,
+            completions: completions.value,
+            exportedAt: new Date()
+          };
+          
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `kebiasaan-${formatDateKey(new Date())}.json`;
+          a.click();
+          
+          URL.revokeObjectURL(url);
+          showNotificationMessage('Data berhasil diexport ke JSON');
+        }
+        
+        function exportToCSV() {
+          let csv = 'Kebiasaan,Frekuensi,Target,Streak Saat Ini,Streak Terbaik,Tingkat Kesuksesan\n';
+          
+          habits.value.forEach(habit => {
+            const successRate = Math.round(
+              (completions.value.filter(c => c.habitId === habit.id).length / 
+              (habit.target * 30)) * 100
+            ) || 0;
+            
+            csv += `"${habit.name}",${formatFrequency(habit.frequency)},${habit.target},${habit.currentStreak},${habit.bestStreak},${successRate}%\n`;
+          });
+          
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `kebiasaan-${formatDateKey(new Date())}.csv`;
+          a.click();
+          
+          URL.revokeObjectURL(url);
+          showNotificationMessage('Data berhasil diexport ke CSV');
+        }
+        
+        function handleFileImport(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              importData.value = JSON.parse(e.target.result);
+              showNotificationMessage('File berhasil dibaca', 'success');
+            } catch (error) {
+              showNotificationMessage('Format file tidak valid', 'error');
+              importData.value = null;
+            }
+          };
+          reader.readAsText(file);
+        }
+        
+        function confirmImport() {
+          if (!importData.value) {
+            showNotificationMessage('Tidak ada data untuk diimport', 'error');
+            return;
+          }
+          
+          try {
+            if (importMode.value === 'replace') {
+              habits.value = importData.value.habits || [];
+              completions.value = importData.value.completions || [];
+            } else {
+              // Merge data
+              const existingHabitIds = habits.value.map(h => h.id);
+              const newHabits = (importData.value.habits || []).filter(
+                h => !existingHabitIds.includes(h.id)
+              );
+              habits.value.push(...newHabits);
+              
+              const existingCompletionIds = completions.value.map(c => c.id);
+              const newCompletions = (importData.value.completions || []).filter(
+                c => !existingCompletionIds.includes(c.id)
+              );
+              completions.value.push(...newCompletions);
+            }
+            
+            saveData();
+            showImportModal.value = false;
+            importData.value = null;
+            if (fileInput.value) fileInput.value.value = '';
+            
+            showNotificationMessage('Data berhasil diimport');
+          } catch (error) {
+            showNotificationMessage('Gagal mengimport data', 'error');
+            console.error(error);
+          }
+        }
+        
+        function resetAllData() {
+            habits.value = [];
+            completions.value = [];
+            saveData();
+            showResetConfirm.value = false;
+            showNotificationMessage('Semua data telah direset');
+        }
+            function saveData() {
+      const data = {
+        habits: habits.value,
+        completions: completions.value,
+        lastSaved: new Date()
+      };
+      localStorage.setItem('habitTrackerData', JSON.stringify(data));
+    }
+
+    function loadData() {
+      const savedData = localStorage.getItem('habitTrackerData');
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          habits.value = data.habits || [];
+          completions.value = data.completions || [];
+          
+          // Update streaks for all habits
+          habits.value.forEach(habit => {
+            checkStreak(habit.id);
+          });
+        } catch (error) {
+          console.error('Error loading saved data:', error);
+        }
+      }
+    }
+
+    // Lifecycle
+    onMounted(() => {
+      loadData();
+    });
+
+    return {
+      // State
+      currentDate,
+      showModal,
+      showHistoryModal,
+      showImportModal,
+      showResetConfirm,
+      editingHabit,
+      selectedHabit,
+      filter,
+      searchQuery,
+      importMode,
+      importData,
+      fileInput,
+      showNotification,
+      notificationMessage,
+      notificationClass,
+      
+      // Data
+      newHabit,
+      modalHabit,
+      habits,
+      completions,
+      
+      // Computed
+      activeHabitsCount,
+      completedTodayCount,
+      bestStreak,
+      successRate,
+      isFutureDate,
+      filteredHabits,
+      habitHistory,
+      last7Days,
+      maxCompleted,
+      streakDistribution,
+      maxStreakCount,
+      
+      // Methods
+      showNotificationMessage,
+      formatDateKey,
+      formatDate,
+      formatFullDate,
+      formatTime,
+      formatFrequency,
+      isHabitCompleted,
+      completionCount,
+      setFilter,
+      addHabit,
+      showEditModal,
+      saveHabit,
+      showDeleteModal,
+      toggleHabitCompletion,
+      prevDay,
+      nextDay,
+      showHistory,
+      exportToJSON,
+      exportToCSV,
+      handleFileImport,
+      confirmImport,
+      resetAllData
+    };
+  }
+}).mount('#app');
+
+    </script> </body> </html>
