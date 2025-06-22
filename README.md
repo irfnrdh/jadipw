@@ -1,6 +1,8 @@
 # Produktifan 
 Ngulik sistem produktif oleh @irfnrdh. 
 
+> Produktif = Memanfaatkan Waktu Yang Tersisa dengan Sebaik Mungkin.
+
 ## Masalah dalam produktifitas 
 Produktivitas yang hanya menjadi wacana (tidak terealisasi) biasanya disebabkan oleh beberapa masalah utama.   
 Berikut analisisnya:
