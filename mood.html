@@ -6,6 +6,8 @@
   <title>Mood Tracker Premium</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     .fade-enter-active,
@@ -52,6 +54,15 @@
     }
     .chart-bar {
       transition: height 0.5s ease;
+    }
+    @media (max-width: 640px) {
+      .mood-option {
+        width: 4.5rem;
+        height: 4.5rem;
+      }
+      .timeline-item {
+        padding-left: 1.5rem;
+      }
     }
   </style>
 </head>
@@ -277,6 +288,17 @@
           Tidak ada data mood yang sesuai dengan filter
         </div>
       </div>
+      
+      <div class="flex justify-between items-center mt-4">
+        <button @click="showExportModal = true" 
+                class="px-4 py-2 border rounded-lg hover:bg-gray-100">
+          <i class="fas fa-download mr-2"></i> Export Data
+        </button>
+        
+        <div class="text-sm text-gray-500">
+          Menampilkan {{ filteredHistory.length }} dari {{ moodEntries.length }} entri
+        </div>
+      </div>
     </div>
 
     <!-- Export Modal -->
@@ -308,7 +330,7 @@
           
           <div class="flex justify-end gap-2">
             <button @click="showExportModal = false"
-                    class="px-4 py-2 border rounded-lg">
+                    class="px-4 py-2 border rounded-lg hover:bg-gray-100">
               Batal
             </button>
             <button @click="exportData"
@@ -323,6 +345,7 @@
 
   <script>
     const { createApp, ref, reactive, computed, onMounted } = Vue;
+    const { jsPDF } = window.jspdf;
 
     createApp({
       setup() {
@@ -458,7 +481,7 @@
         });
         
         const filteredHistory = computed(() => {
-          let entries = [...moodEntries.value].reverse();
+          let entries = [...moodEntries.value].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
           
           if (historyFilter.value !== 'all') {
             entries = entries.filter(entry => entry.mood === historyFilter.value);
@@ -530,34 +553,44 @@
         }
         
         function exportData() {
-          let dataToExport = [];
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          if (exportRange.value === 'today') {
-            const dateStr = today.toISOString().split('T')[0];
-            dataToExport = moodEntries.value.filter(entry => entry.timestamp.startsWith(dateStr));
-          } else if (exportRange.value === 'week') {
-            const weekAgo = new Date(today);
-            weekAgo.setDate(weekAgo.getDate() - 7);
-            dataToExport = moodEntries.value.filter(entry => new Date(entry.timestamp) >= weekAgo);
-          } else if (exportRange.value === 'month') {
-            const monthAgo = new Date(today);
-            monthAgo.setMonth(monthAgo.getMonth() - 1);
-            dataToExport = moodEntries.value.filter(entry => new Date(entry.timestamp) >= monthAgo);
-          } else {
-            dataToExport = [...moodEntries.value];
+          try {
+            let dataToExport = [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (exportRange.value === 'today') {
+              const dateStr = today.toISOString().split('T')[0];
+              dataToExport = moodEntries.value.filter(entry => entry.timestamp.startsWith(dateStr));
+            } else if (exportRange.value === 'week') {
+              const weekAgo = new Date(today);
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              dataToExport = moodEntries.value.filter(entry => new Date(entry.timestamp) >= weekAgo);
+            } else if (exportRange.value === 'month') {
+              const monthAgo = new Date(today);
+              monthAgo.setMonth(monthAgo.getMonth() - 1);
+              dataToExport = moodEntries.value.filter(entry => new Date(entry.timestamp) >= monthAgo);
+            } else {
+              dataToExport = [...moodEntries.value];
+            }
+            
+            if (dataToExport.length === 0) {
+              showNotificationMessage('Tidak ada data untuk diexport', 'error');
+              return;
+            }
+            
+            if (exportFormat.value === 'json') {
+              exportToJSON(dataToExport);
+            } else if (exportFormat.value === 'csv') {
+              exportToCSV(dataToExport);
+            } else {
+              exportToPDF(dataToExport);
+            }
+            
+            showExportModal.value = false;
+          } catch (error) {
+            console.error('Export error:', error);
+            showNotificationMessage('Gagal mengeksport data', 'error');
           }
-          
-          if (exportFormat.value === 'json') {
-            exportToJSON(dataToExport);
-          } else if (exportFormat.value === 'csv') {
-            exportToCSV(dataToExport);
-          } else {
-            exportToPDF(dataToExport);
-          }
-          
-          showExportModal.value = false;
         }
         
         function exportToJSON(data) {
@@ -584,7 +617,7 @@
             csv += `"${dateStr}","${timeStr}","${moodOptions[entry.mood].label}","${entry.note || ''}"\n`;
           });
           
-          const blob = new Blob([csv], { type: 'text/csv' });
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
           
           const a = document.createElement('a');
@@ -597,22 +630,76 @@
         }
         
         function exportToPDF(data) {
-          // In a real app, you would use a library like jsPDF or a backend service
-          alert('Fitur PDF export membutuhkan integrasi dengan library jsPDF atau backend service');
+          try {
+            const doc = new jsPDF();
+            
+            // Judul
+            doc.setFontSize(18);
+            doc.text('Laporan Mood Tracker', 105, 15, { align: 'center' });
+            
+            // Informasi export
+            doc.setFontSize(12);
+            doc.text(`Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`, 14, 25);
+            doc.text(`Jumlah Data: ${data.length} entri`, 14, 35);
+            
+            // Header tabel
+            const headers = [['Tanggal', 'Waktu', 'Mood', 'Catatan']];
+            
+            // Data tabel
+            const pdfData = data.map(entry => {
+              const date = new Date(entry.timestamp);
+              return [
+                date.toLocaleDateString('id-ID'),
+                formatTime(date),
+                moodOptions[entry.mood].label,
+                entry.note || '-'
+              ];
+            });
+            
+            // Buat tabel
+            doc.autoTable({
+              head: headers,
+              body: pdfData,
+              startY: 45,
+              styles: {
+                fontSize: 10,
+                cellPadding: 3,
+                overflow: 'linebreak'
+              },
+              columnStyles: {
+                0: { cellWidth: 30 },
+                1: { cellWidth: 25 },
+                2: { cellWidth: 35 },
+                3: { cellWidth: 'auto' }
+              }
+            });
+            
+            // Simpan PDF
+            doc.save(`mood-data-${new Date().toISOString().split('T')[0]}.pdf`);
+            showNotificationMessage('Data mood berhasil diexport ke PDF');
+          } catch (error) {
+            console.error('PDF export error:', error);
+            showNotificationMessage('Gagal membuat PDF', 'error');
+          }
         }
         
         function saveData() {
-          localStorage.setItem('moodTrackerData', JSON.stringify(moodEntries.value));
+          try {
+            localStorage.setItem('moodTrackerData', JSON.stringify(moodEntries.value));
+          } catch (error) {
+            console.error('Gagal menyimpan data:', error);
+          }
         }
         
         function loadData() {
-          const savedData = localStorage.getItem('moodTrackerData');
-          if (savedData) {
-            try {
+          try {
+            const savedData = localStorage.getItem('moodTrackerData');
+            if (savedData) {
               moodEntries.value = JSON.parse(savedData);
-            } catch (error) {
-              console.error('Error loading mood data:', error);
             }
+          } catch (error) {
+            console.error('Gagal memuat data:', error);
+            showNotificationMessage('Gagal memuat data yang tersimpan', 'error');
           }
         }
         
