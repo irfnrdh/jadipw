@@ -4,7 +4,7 @@
 
 Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesional yang ingin lebih produktif.
 
----
+
 
 ## 🎯 Langkah 1: Pahami Dulu (1-2 hari)
 
@@ -19,7 +19,7 @@ Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesiona
   - Cek: masalah mana yang kamu alami
   - Solusi sederhana untuk setiap masalah
 
----
+
 
 ## ⚡ Langkah 2: Mulai Praktik (Minggu 1-2)
 
@@ -39,7 +39,7 @@ Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesiona
   - Contoh: "Jika buka HP, maka buka catatan tugas dulu"
   - 20+ contoh If-Then untuk berbagai situasi
 
----
+
 
 ## 🚀 Langkah 3: Tingkatkan Kemampuan (Minggu 3-4)
 
@@ -60,7 +60,7 @@ Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesiona
   - Jadwalkan tugas berat di waktu energi puncak
   - Template tracking energi sederhana
 
----
+
 
 ## 🏆 Langkah 4: Jadi Konsisten (Minggu 5-8)
 
@@ -86,7 +86,7 @@ Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesiona
   - Teknik mengatakan "tidak" 
   - Delegasi dan minta bantuan
 
----
+
 
 ## 🎛️ Langkah 5: Untuk yang Sudah Mahir (Minggu 9+)
 
@@ -106,7 +106,7 @@ Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesiona
   - Cara otomasi tugas berulang
   - Rekomendasi app berdasarkan kebutuhan
 
----
+
 
 ## 📚 Berdasarkan Kategori
 
@@ -154,7 +154,7 @@ Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesiona
   - Delegasi yang efektif
   - Growth planning
 
----
+
 
 ## 🛠️ Tools Sederhana
 
@@ -169,7 +169,7 @@ Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesiona
 - [ ] **[Setup HP](./tools/setup-hp.md)** - Setting smartphone untuk produktif
 - [ ] **[Setup Komputer](./tools/setup-komputer.md)** - Optimasi laptop/PC
 
----
+
 
 ## 🆘 Bantuan Cepat
 
@@ -186,7 +186,7 @@ Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesiona
 **Minggu ke-2**: Mulai review harian 5 menit
 **Minggu ke-4**: Evaluasi dan perbaiki sistem
 
----
+
 
 ## 💬 Komunitas
 
@@ -194,7 +194,7 @@ Panduan ini cocok untuk siapa saja: pelajar, mahasiswa, pekerja, atau profesiona
 - **[Sharing Progress](./support/progress.md)** - Cerita sukses dari pengguna lain
 - **[Request Konten](./support/request.md)** - Minta dibuatkan panduan khusus
 
----
+
 
 **Ingat**: Mulai yang kecil, konsisten setiap hari, perbaiki sedikit-sedikit.
 
