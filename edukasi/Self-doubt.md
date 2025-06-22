@@ -1,3 +1,5 @@
+# Self-doubt
+
 **Self-doubt** adalah **keraguan terhadap diri sendiri** — perasaan tidak yakin terhadap kemampuan, keputusan, atau nilai diri kita sendiri. Ini bisa muncul dalam bentuk:
 
 * "Apa aku cukup baik?"
