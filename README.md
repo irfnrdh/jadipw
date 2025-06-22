@@ -17,6 +17,12 @@ Contoh dalam konteks:
 * "Dia produktif menulis setiap pagi, menghasilkan satu artikel setiap hari."
 * "Meski waktunya sempit, tapi dia tetap produktif karena tahu prioritasnya."
 
+
+> Sistem ini bukan cuma tools, tapi gerakan sosial.  
+> - Produktivitas yang berpahala  
+> - Bukan sibuk, tapi bermakna  
+> - Jadwal kita bukan milik kita, tapi amanah  
+
 ## Masalah dalam produktifitas 
 Produktivitas yang hanya menjadi wacana (tidak terealisasi) biasanya disebabkan oleh beberapa masalah utama.   
 Berikut analisisnya:
