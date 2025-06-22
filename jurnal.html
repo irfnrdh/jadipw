@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Journal</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.3s ease;
+    }
+    .fade-enter-from,
+    .fade-leave-to {
+      opacity: 0;
+    }
+    .journal-editor {
+      min-height: 300px;
+    }
+    .mood-option {
+      transition: all 0.2s ease;
+    }
+    .mood-option.selected {
+      transform: scale(1.2);
+    }
+    .calendar-day.current-day {
+      box-shadow: 0 0 0 2px #3b82f6;
+    }
+    .calendar-day.has-entry {
+      background-color: #e0f2fe;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="app" class="container mx-auto p-4 max-w-4xl">
+    <!-- Notification -->
+    <transition name="fade">
+      <div v-if="showNotification" class="fixed bottom-4 right-4 z-50">
+        <div :class="notificationClass" class="px-6 py-3 rounded-lg shadow-lg">
+          {{ notificationMessage }}
+        </div>
+      </div>
+    </transition>
+
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">📖 Daily Journal </h1>
+      <p class="text-gray-600">Catat perjalanan harianmu dengan detail</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Calendar Section -->
+        <div class="lg:col-span-1">
+          <div class="mb-4 flex justify-between items-center">
+            <button @click="prevMonth" class="p-2 rounded-full hover:bg-gray-100">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <h2 class="text-xl font-bold">
+              {{ currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) }}
+            </h2>
+            <button @click="nextMonth" class="p-2 rounded-full hover:bg-gray-100">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+          
+          <div class="grid grid-cols-7 gap-1 mb-2">
+            <div v-for="day in ['M', 'S', 'S', 'R', 'K', 'J', 'S']" 
+                 class="text-center text-sm font-medium text-gray-500">
+              {{ day }}
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-7 gap-1">
+            <div v-for="day in calendarDays" 
+                 @click="selectDate(day.date)"
+                 :class="{
+                   'opacity-30': !day.isCurrentMonth,
+                   'calendar-day current-day': isToday(day.date),
+                   'calendar-day has-entry': hasJournalEntry(day.date)
+                 }"
+                 class="h-10 flex items-center justify-center rounded-full cursor-pointer hover:bg-blue-50">
+              {{ day.date.getDate() }}
+            </div>
+          </div>
+          
+          <!-- Mood Statistics -->
+          <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h3 class="font-bold mb-2">Statistik Mood Bulan Ini</h3>
+            <div v-for="(count, mood) in moodStatistics" class="mb-1">
+              <div class="flex justify-between text-sm">
+                <span>{{ moodEmojis[mood] }} {{ moodLabels[mood] }}</span>
+                <span>{{ count }} ({{ Math.round((count / moodStatistics.total) * 100) || 0 }}%)</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-500 h-2 rounded-full" 
+                     :style="{ width: `${Math.round((count / moodStatistics.total) * 100) || 0}%` }"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Journal Editor Section -->
+        <div class="lg:col-span-2">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">
+              {{ selectedDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }}
+            </h2>
+            <button @click="showExportModal = true" 
+                    class="px-3 py-1 bg-gray-100 rounded-lg text-sm hover:bg-gray-200">
+              <i class="fas fa-file-export mr-1"></i> Export
+            </button>
+          </div>
+          
+          <!-- Mood Selector -->
+          <div class="mb-4 flex justify-center space-x-4">
+            <div v-for="(emoji, mood) in moodEmojis" 
+                 @click="currentEntry.mood = mood"
+                 :class="{ 
+                   'mood-option selected': currentEntry.mood === mood,
+                   'mood-option': currentEntry.mood !== mood
+                 }"
+                 class="text-3xl p-2 rounded-full cursor-pointer">
+              {{ emoji }}
+            </div>
+          </div>
+          
+          <!-- Journal Editor -->
+          <div class="mb-4">
+            <input v-model="currentEntry.title" 
+                   type="text" 
+                   placeholder="Judul entri hari ini" 
+                   class="w-full p-3 border rounded-lg mb-2">
+            
+            <textarea v-model="currentEntry.content" 
+                      class="journal-editor w-full p-3 border rounded-lg"
+                      placeholder="Bagaimana harimu hari ini?"></textarea>
+          </div>
+          
+          <!-- Tags -->
+          <div class="mb-4">
+            <div class="flex flex-wrap gap-2 mb-2">
+              <span v-for="(tag, index) in currentEntry.tags" 
+                    class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+                {{ tag }}
+                <button @click="removeTag(index)" class="ml-1 text-blue-600">
+                  <i class="fas fa-times"></i>
+                </button>
+              </span>
+            </div>
+            <div class="flex">
+              <input v-model="newTag" 
+                     @keyup.enter="addTag"
+                     type="text" 
+                     placeholder="Tambahkan tag" 
+                     class="flex-1 p-2 border rounded-l-lg">
+              <button @click="addTag" 
+                      class="px-3 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Save Button -->
+          <div class="flex justify-end">
+            <button @click="saveEntry" 
+                    :disabled="!currentEntry.content"
+                    :class="{ 
+                      'bg-blue-500 hover:bg-blue-600': currentEntry.content,
+                      'bg-gray-400 cursor-not-allowed': !currentEntry.content
+                    }"
+                    class="px-6 py-2 text-white rounded-lg transition">
+              <i class="fas fa-save mr-2"></i> Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Previous Entries -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6" v-if="filteredEntries.length > 0">
+      <h2 class="text-xl font-bold mb-4 border-b pb-2">📚 Entri Sebelumnya</h2>
+      
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button @click="setEntriesFilter('all')" 
+                :class="{ 'bg-blue-100': entriesFilter === 'all' }"
+                class="px-3 py-1 border rounded-full text-sm">
+          Semua
+        </button>
+        <button v-for="(mood, key) in moodLabels" 
+                @click="setEntriesFilter(key)"
+                :class="{ 'bg-blue-100': entriesFilter === key }"
+                class="px-3 py-1 border rounded-full text-sm">
+          {{ moodEmojis[key] }} {{ mood }}
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div v-for="entry in filteredEntries" 
+             class="border rounded-lg p-4 hover:shadow-md transition">
+          <div class="flex justify-between items-start mb-2">
+            <h3 class="font-bold text-lg">{{ entry.title || 'Tanpa Judul' }}</h3>
+            <div class="flex items-center">
+              <span class="text-2xl mr-2">{{ moodEmojis[entry.mood] }}</span>
+              <span class="text-sm text-gray-500">
+                {{ new Date(entry.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }) }}
+              </span>
+            </div>
+          </div>
+          
+          <p class="text-gray-700 mb-3 whitespace-pre-line">{{ truncateContent(entry.content) }}</p>
+          
+          <div class="flex flex-wrap gap-2 mb-3">
+            <span v-for="tag in entry.tags" 
+                  class="bg-blue-50 text-blue-800 px-2 py-1 rounded-full text-xs">
+              {{ tag }}
+            </span>
+          </div>
+          
+          <div class="flex justify-end space-x-2">
+            <button @click="viewEntry(entry)"
+                    class="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-sm hover:bg-blue-100">
+              <i class="fas fa-eye mr-1"></i> Lihat
+            </button>
+            <button @click="editEntry(entry)"
+                    class="px-3 py-1 bg-gray-50 text-gray-600 rounded-lg text-sm hover:bg-gray-100">
+              <i class="fas fa-edit mr-1"></i> Edit
+            </button>
+            <button @click="confirmDeleteEntry(entry.id)"
+                    class="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-sm hover:bg-red-100">
+              <i class="fas fa-trash mr-1"></i> Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Entry Modal -->
+    <transition name="fade">
+      <div v-if="showViewModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">
+              {{ viewedEntry.title || 'Tanpa Judul' }}
+            </h2>
+            <button @click="showViewModal = false" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <div class="flex items-center mb-4">
+            <span class="text-3xl mr-3">{{ moodEmojis[viewedEntry.mood] }}</span>
+            <div>
+              <div class="font-medium">
+                {{ new Date(viewedEntry.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }}
+              </div>
+              <div class="text-sm text-gray-500">
+                Ditulis pada {{ formatTime(new Date(viewedEntry.date)) }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span v-for="tag in viewedEntry.tags" 
+                  class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+              {{ tag }}
+            </span>
+          </div>
+          
+          <div class="border-t pt-4 whitespace-pre-line">
+            {{ viewedEntry.content }}
+          </div>
+          
+          <div class="flex justify-end mt-6">
+            <button @click="showViewModal = false"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Export Modal -->
+    <transition name="fade">
+      <div v-if="showExportModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h2 class="text-xl font-bold mb-4">📤 Export Journal</h2>
+          
+          <div class="space-y-4 mb-4">
+            <div>
+              <label class="block mb-2">Format Export</label>
+              <select v-model="exportFormat" class="w-full p-3 border rounded-lg">
+                <option value="json">JSON (Full Data)</option>
+                <option value="pdf">PDF (Printable)</option>
+                <option value="markdown">Markdown</option>
+              </select>
+            </div>
+            
+            <div v-if="exportFormat === 'pdf'">
+              <label class="flex items-center">
+                <input v-model="exportRange" type="radio" value="current" class="mr-2">
+                <span>Entri Hari Ini</span>
+              </label>
+              <label class="flex items-center mt-2">
+                <input v-model="exportRange" type="radio" value="month" class="mr-2">
+                <span>Bulan Ini</span>
+              </label>
+              <label class="flex items-center mt-2">
+                <input v-model="exportRange" type="radio" value="all" class="mr-2">
+                <span>Semua Entri</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2">
+            <button @click="showExportModal = false"
+                    class="px-4 py-2 border rounded-lg">
+              Batal
+            </button>
+            <button @click="exportData"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Export
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Delete Confirmation Modal -->
+    <transition name="fade">
+      <div v-if="showDeleteModal" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h2 class="text-xl font-bold mb-4">⚠️ Hapus Entri</h2>
+          <p class="mb-6">Apakah Anda yakin ingin menghapus entri ini? Aksi ini tidak dapat dibatalkan.</p>
+          
+          <div class="flex justify-end gap-2">
+            <button @click="showDeleteModal = false"
+                    class="px-4 py-2 border rounded-lg">
+              Batal
+            </button>
+            <button @click="deleteEntry"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+              Ya, Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // App State
+        const currentMonth = ref(new Date());
+        const selectedDate = ref(new Date());
+        const showViewModal = ref(false);
+        const showExportModal = ref(false);
+        const showDeleteModal = ref(false);
+        const entriesFilter = ref('all');
+        const exportFormat = ref('json');
+        const exportRange = ref('current');
+        const entryToDelete = ref(null);
+        const newTag = ref('');
+        
+        // Notification
+        const showNotification = ref(false);
+        const notificationMessage = ref('');
+        const notificationClass = ref('');
+        
+        // Mood Options
+        const moodEmojis = {
+          happy: '😊',
+          good: '🙂',
+          neutral: '😐',
+          bad: '😕',
+          sad: '😢'
+        };
+        
+        const moodLabels = {
+          happy: 'Sangat Baik',
+          good: 'Baik',
+          neutral: 'Biasa',
+          bad: 'Buruk',
+          sad: 'Sangat Buruk'
+        };
+        
+        // Current Entry
+        const currentEntry = reactive({
+          id: null,
+          date: '',
+          title: '',
+          content: '',
+          mood: 'neutral',
+          tags: []
+        });
+        
+        // Viewed Entry
+        const viewedEntry = reactive({
+          id: null,
+          date: '',
+          title: '',
+          content: '',
+          mood: 'neutral',
+          tags: []
+        });
+        
+        // Journal Data
+        const journalEntries = ref([]);
+        
+        // Computed Properties
+        const calendarDays = computed(() => {
+          const year = currentMonth.value.getFullYear();
+          const month = currentMonth.value.getMonth();
+          
+          // Get first day of month and how many days in month
+          const firstDay = new Date(year, month, 1);
+          const daysInMonth = new Date(year, month + 1, 0).getDate();
+          
+          // Get days from previous month to show
+          const prevMonthDays = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+          
+          // Get days from next month to show
+          const totalDays = Math.ceil((daysInMonth + prevMonthDays) / 7) * 7;
+          const nextMonthDays = totalDays - (daysInMonth + prevMonthDays);
+          
+          const days = [];
+          
+          // Previous month days
+          const prevMonth = new Date(year, month - 1, 1);
+          const daysInPrevMonth = new Date(year, month, 0).getDate();
+          
+          for (let i = prevMonthDays; i > 0; i--) {
+            const date = new Date(year, month - 1, daysInPrevMonth - i + 1);
+            days.push({
+              date,
+              isCurrentMonth: false
+            });
+          }
+          
+          // Current month days
+          for (let i = 1; i <= daysInMonth; i++) {
+            const date = new Date(year, month, i);
+            days.push({
+              date,
+              isCurrentMonth: true
+            });
+          }
+          
+          // Next month days
+          for (let i = 1; i <= nextMonthDays; i++) {
+            const date = new Date(year, month + 1, i);
+            days.push({
+              date,
+              isCurrentMonth: false
+            });
+          }
+          
+          return days;
+        });
+        
+        const filteredEntries = computed(() => {
+          let entries = [...journalEntries.value].reverse();
+          
+          if (entriesFilter.value !== 'all') {
+            entries = entries.filter(entry => entry.mood === entriesFilter.value);
+          }
+          
+          return entries.slice(0, 10);
+        });
+        
+        const moodStatistics = computed(() => {
+          const stats = {
+            happy: 0,
+            good: 0,
+            neutral: 0,
+            bad: 0,
+            sad: 0,
+            total: 0
+          };
+          
+          const currentMonthEntries = journalEntries.value.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate.getMonth() === currentMonth.value.getMonth() && 
+                   entryDate.getFullYear() === currentMonth.value.getFullYear();
+          });
+          
+          currentMonthEntries.forEach(entry => {
+            stats[entry.mood]++;
+            stats.total++;
+          });
+          
+          return stats;
+        });
+        
+        // Methods
+        function showNotificationMessage(message, type = 'success') {
+          notificationMessage.value = message;
+          notificationClass.value = type === 'success' 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-red-100 text-red-800';
+          showNotification.value = true;
+          
+          setTimeout(() => {
+            showNotification.value = false;
+          }, 3000);
+        }
+        
+        function formatTime(date) {
+          return date.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
+        
+        function truncateContent(content, length = 100) {
+          if (content.length <= length) return content;
+          return content.substring(0, length) + '...';
+        }
+        
+        function isToday(date) {
+          const today = new Date();
+          return date.getDate() === today.getDate() && 
+                 date.getMonth() === today.getMonth() && 
+                 date.getFullYear() === today.getFullYear();
+        }
+        
+        function hasJournalEntry(date) {
+          const dateStr = date.toISOString().split('T')[0];
+          return journalEntries.value.some(entry => entry.date.startsWith(dateStr));
+        }
+        
+        function prevMonth() {
+          currentMonth.value = new Date(
+            currentMonth.value.getFullYear(),
+            currentMonth.value.getMonth() - 1,
+            1
+          );
+        }
+        
+        function nextMonth() {
+          currentMonth.value = new Date(
+            currentMonth.value.getFullYear(),
+            currentMonth.value.getMonth() + 1,
+            1
+          );
+        }
+        
+        function selectDate(date) {
+          if (date.getMonth() !== currentMonth.value.getMonth()) {
+            currentMonth.value = new Date(date.getFullYear(), date.getMonth(), 1);
+          }
+          selectedDate.value = date;
+          loadEntryForDate(date);
+        }
+        
+        function addTag() {
+          if (newTag.value.trim() && !currentEntry.tags.includes(newTag.value.trim())) {
+            currentEntry.tags.push(newTag.value.trim());
+            newTag.value = '';
+          }
+        }
+        
+        function removeTag(index) {
+          currentEntry.tags.splice(index, 1);
+        }
+        
+        function setEntriesFilter(filter) {
+          entriesFilter.value = filter;
+        }
+        
+        function loadEntryForDate(date) {
+          const dateStr = date.toISOString().split('T')[0];
+          const existingEntry = journalEntries.value.find(entry => entry.date.startsWith(dateStr));
+          
+          // Reset current entry
+          Object.assign(currentEntry, {
+            id: null,
+            date: date.toISOString(),
+            title: '',
+            content: '',
+            mood: 'neutral',
+            tags: []
+          });
+          
+          if (existingEntry) {
+            Object.assign(currentEntry, JSON.parse(JSON.stringify(existingEntry)));
+          }
+        }
+        
+        function saveEntry() {
+          if (!currentEntry.content.trim()) {
+            showNotificationMessage('Isi journal tidak boleh kosong', 'error');
+            return;
+          }
+          
+          // Update existing entry or add new one
+          if (currentEntry.id) {
+            const index = journalEntries.value.findIndex(entry => entry.id === currentEntry.id);
+            if (index !== -1) {
+              journalEntries.value[index] = JSON.parse(JSON.stringify(currentEntry));
+            }
+          } else {
+            currentEntry.id = Date.now().toString();
+            journalEntries.value.push(JSON.parse(JSON.stringify(currentEntry)));
+          }
+          
+          saveData();
+          showNotificationMessage('Journal berhasil disimpan');
+        }
+        
+        function viewEntry(entry) {
+          Object.assign(viewedEntry, JSON.parse(JSON.stringify(entry)));
+          showViewModal.value = true;
+        }
+        
+        function editEntry(entry) {
+          Object.assign(currentEntry, JSON.parse(JSON.stringify(entry)));
+          selectedDate.value = new Date(entry.date);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function confirmDeleteEntry(id) {
+          entryToDelete.value = id;
+          showDeleteModal.value = true;
+        }
+        
+        function deleteEntry() {
+          journalEntries.value = journalEntries.value.filter(entry => entry.id !== entryToDelete.value);
+          saveData();
+          showDeleteModal.value = false;
+          showNotificationMessage('Journal berhasil dihapus');
+        }
+        
+        function exportData() {
+          let dataToExport = [];
+          
+          if (exportRange.value === 'current') {
+            const dateStr = selectedDate.value.toISOString().split('T')[0];
+            dataToExport = journalEntries.value.filter(entry => entry.date.startsWith(dateStr));
+          } else if (exportRange.value === 'month') {
+            dataToExport = journalEntries.value.filter(entry => {
+              const entryDate = new Date(entry.date);
+              return entryDate.getMonth() === selectedDate.value.getMonth() && 
+                     entryDate.getFullYear() === selectedDate.value.getFullYear();
+            });
+          } else {
+            dataToExport = [...journalEntries.value];
+          }
+          
+          if (exportFormat.value === 'json') {
+            exportToJSON(dataToExport);
+          } else if (exportFormat.value === 'pdf') {
+            exportToPDF(dataToExport);
+          } else {
+            exportToMarkdown(dataToExport);
+          }
+          
+          showExportModal.value = false;
+        }
+        
+        function exportToJSON(data) {
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `journal-entries-${new Date().toISOString().split('T')[0]}.json`;
+          a.click();
+          
+          URL.revokeObjectURL(url);
+          showNotificationMessage('Journal berhasil diexport ke JSON');
+        }
+        
+        function exportToPDF(data) {
+          // In a real app, you would use a library like jsPDF or a backend service
+          alert('Fitur PDF export membutuhkan integrasi dengan library jsPDF atau backend service');
+        }
+        
+        function exportToMarkdown(data) {
+          let markdown = '';
+          
+          data.forEach(entry => {
+            markdown += `# ${entry.title || 'Tanpa Judul'}\n\n`;
+            markdown += `**Tanggal**: ${new Date(entry.date).toLocaleDateString('id-ID')}\n\n`;
+            markdown += `**Mood**: ${moodEmojis[entry.mood]} ${moodLabels[entry.mood]}\n\n`;
+            
+            if (entry.tags.length > 0) {
+              markdown += `**Tags**: ${entry.tags.join(', ')}\n\n`;
+            }
+            
+            markdown += `${entry.content}\n\n---\n\n`;
+          });
+          
+          const blob = new Blob([markdown], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `journal-entries-${new Date().toISOString().split('T')[0]}.md`;
+          a.click();
+          
+          URL.revokeObjectURL(url);
+          showNotificationMessage('Journal berhasil diexport ke Markdown');
+        }
+        
+        function saveData() {
+          localStorage.setItem('journalEntries', JSON.stringify(journalEntries.value));
+        }
+        
+        function loadData() {
+          const savedEntries = localStorage.getItem('journalEntries');
+          if (savedEntries) {
+            try {
+              journalEntries.value = JSON.parse(savedEntries);
+            } catch (error) {
+              console.error('Error loading journal entries:', error);
+            }
+          }
+        }
+        
+        // Lifecycle
+        onMounted(() => {
+          loadData();
+          loadEntryForDate(selectedDate.value);
+        });
+        
+        return {
+          // State
+          currentMonth,
+          selectedDate,
+          showViewModal,
+          showExportModal,
+          showDeleteModal,
+          entriesFilter,
+          exportFormat,
+          exportRange,
+          showNotification,
+          notificationMessage,
+          notificationClass,
+          
+          // Data
+          currentEntry,
+          viewedEntry,
+          journalEntries,
+          newTag,
+          
+          // Mood Options
+          moodEmojis,
+          moodLabels,
+          
+          // Computed
+          calendarDays,
+          filteredEntries,
+          moodStatistics,
+          
+          // Methods
+          showNotificationMessage,
+          formatTime,
+          truncateContent,
+          isToday,
+          hasJournalEntry,
+          prevMonth,
+          nextMonth,
+          selectDate,
+          addTag,
+          removeTag,
+          setEntriesFilter,
+          saveEntry,
+          viewEntry,
+          editEntry,
+          confirmDeleteEntry,
+          deleteEntry,
+          exportData
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
