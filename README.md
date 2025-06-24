@@ -112,9 +112,9 @@ Tantangan siap pakai untuk memulai journey self-hacking:
 | [**Habit Stacking**](tantangan/habit-stacking.md) | Pembentukan Kebiasaan | 🟢 Pemula |
 | [**Deep Work**](tantangan/deep-work.md) | Fokus & Perhatian | 🔴 Lanjutan |
 
-## 📊 Kisah Sukses
+## 📊 Kisah Pengguna
 
-> "Saya mulai dari bangun digital garden, mencoba Laerning in Public, berbagi cerita di threads sampai akhirnya membuat repository self-hacking ini adalah bagian dari keseriusan saya move-on dari overthinker, buat Indway (framework sendiri), dan disini ngulik sistem produktif untuk semua orang yang membutuhkan.  Disini saya catat + coba, gagal + bagi. biar gak belajar sendirian dan bisa latihan produktif bersama. Dari kita untuk 1jt manusia produktif berikutnya" ~ @irfnrdh
+> "Saya mulai ini semua dari banyak kegagalan yang terus berulang, lalu saya coba bangun digital garden atau basis pengetahuan saya sendiri, mencoba Learning in Public dan berbagi cerita di threads sampai akhirnya membuat repository self-hacking ini adalah bagian dari keseriusan saya move-on dari overthinker, buat Indway (framework sendiri), dan disini ngulik sistem produktif untuk semua orang yang membutuhkan.  Disini saya catat + coba, gagal + bagi. biar gak belajar sendirian dan bisa latihan produktif bersama. Dari kita untuk 1jt manusia produktif berikutnya" ~ @irfnrdh
 
 [Bagikan kisah sukses kamu!](https://github.com/irfnrdh/self-hacking/discussions/categories/kisah-sukses)
 
