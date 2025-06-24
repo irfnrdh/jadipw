@@ -10,8 +10,8 @@
 
 ## 🌏 Bahasa / Languages
 
-- [🇮🇩 Bahasa Indonesia](README.md) (Saat ini)
-- [🇺🇸 English](README_EN.md) (Segera hadir)
+- [🇮🇩 Bahasa Indonesia](README) (Saat ini)
+- [🇺🇸 English](README_EN) (Segera hadir)
 - [🌐 Bantu Translate](docs/translation-guide.md)
 
 ## 📋 Daftar Isi
