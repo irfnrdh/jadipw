@@ -114,9 +114,7 @@ Tantangan siap pakai untuk memulai journey self-hacking:
 
 ## 📊 Kisah Sukses
 
-> "Menggunakan framework self-hacking, saya meningkatkan produktivitas 40% dan kualitas tidur dari 6/10 menjadi 8.5/10 hanya dalam 2 bulan." - @kontributor_nama
-
-> "Teknik habit stacking membantu saya membangun 5 kebiasaan positif baru yang bertahan lebih dari 6 bulan." - @kontributor_lain
+> "Saya mulai dari bangun digital garden, mencoba Laerning in Public, berbagi cerita di threads sampai akhirnya membuat repository self-hacking ini adalah bagian dari keseriusan saya move-on dari overthinker, buat Indway (framework sendiri), dan disini ngulik sistem produktif untuk semua orang yang membutuhkan.  Disini saya catat + coba, gagal + bagi. biar gak belajar sendirian dan bisa latihan produktif bersama. Dari kita untuk 1jt manusia produktif berikutnya" ~ @irfnrdh
 
 [Bagikan kisah sukses kamu!](https://github.com/irfnrdh/self-hacking/discussions/categories/kisah-sukses)
 
