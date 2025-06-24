@@ -1,6 +1,7 @@
-# 🚀 Self-Hacking: Panduan Lengkap Optimasi Diri
+# 🚀 Self-Hacking: Panduan Meretas Diri
 
-> "Proyek terbaik yang akan pernah kamu kerjakan adalah dirimu sendiri." 
+> "Proyek terbaik yang akan pernah kamu kerjakan adalah dirimu sendiri."
+> ~ unkown 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
