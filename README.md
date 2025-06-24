@@ -1,3 +1,7 @@
+---
+layout: default
+---
+
 # 🚀 Panduan Meretas Diri
 
 > "Proyek terbaik yang akan pernah kamu kerjakan adalah dirimu sendiri."
