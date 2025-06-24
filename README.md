@@ -1,4 +1,4 @@
-# 🚀 Self-Hacking: Panduan Meretas Diri
+# 🚀 Panduan Meretas Diri
 
 > "Proyek terbaik yang akan pernah kamu kerjakan adalah dirimu sendiri."
 > ~ unkown 
