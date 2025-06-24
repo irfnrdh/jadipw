@@ -16,13 +16,13 @@
 
 ## 📋 Daftar Isi
 
-- [Tentang](#tentang)
-- [Mulai Cepat](#mulai-cepat) 
-- [Dokumentasi](#dokumentasi)
-- [Tools & Template](#tools--template)
-- [Komunitas](#komunitas)
-- [Kontribusi](#kontribusi)
-- [Lisensi](#lisensi)
+- [Tentang](#-tentang)
+- [Mulai Cepat](#-mulai-cepat) 
+- [Dokumentasi](#-dokumentasi)
+- [Tools & Template](#-tools--template)
+- [Komunitas](#-komunitas)
+- [Kontribusi](#-kontribusi)
+- [Lisensi](#-lisensi)
 
 ## 🎯 Tentang
 
