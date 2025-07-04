@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Respect Assessment & Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen">
+    <div id="app" class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Self-Respect Assessment</h1>
+            <p class="text-gray-600">Kenali diri Anda lebih baik dan lacak perkembangan self-respect</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex justify-center mb-8">
+            <div class="bg-white rounded-lg shadow-md p-2 flex space-x-2">
+                <button @click="currentTab = 'assessment'" 
+                        :class="currentTab === 'assessment' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                        class="px-4 py-2 rounded-md transition-colors">
+                    Assessment
+                </button>
+                <button @click="currentTab = 'values'" 
+                        :class="currentTab === 'values' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                        class="px-4 py-2 rounded-md transition-colors">
+                    Nilai-nilai
+                </button>
+                <button @click="currentTab = 'goals'" 
+                        :class="currentTab === 'goals' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                        class="px-4 py-2 rounded-md transition-colors">
+                    Tujuan
+                </button>
+                <button @click="currentTab = 'tracking'" 
+                        :class="currentTab === 'tracking' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                        class="px-4 py-2 rounded-md transition-colors">
+                    Tracking
+                </button>
+                <button @click="currentTab = 'report'" 
+                        :class="currentTab === 'report' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-100'"
+                        class="px-4 py-2 rounded-md transition-colors">
+                    Laporan
+                </button>
+            </div>
+        </div>
+
+        <!-- Assessment Tab -->
+        <div v-if="currentTab === 'assessment'" class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Assessment Self-Respect</h2>
+            <form @submit.prevent="calculateScore">
+                <div class="grid gap-6">
+                    <div v-for="(question, index) in assessmentQuestions" :key="index" class="border-b border-gray-200 pb-4">
+                        <label class="block text-gray-700 font-medium mb-3">
+                            {{ index + 1 }}. {{ question }}
+                        </label>
+                        <div class="flex space-x-4">
+                            <div v-for="n in 10" :key="n" class="flex items-center">
+                                <input type="radio" 
+                                       :id="`q${index}_${n}`" 
+                                       :name="`question_${index}`" 
+                                       :value="n"
+                                       v-model="assessmentAnswers[index]"
+                                       class="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500">
+                                <label :for="`q${index}_${n}`" class="ml-1 text-sm text-gray-600">{{ n }}</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-center">
+                    <button type="submit" 
+                            class="bg-purple-500 hover:bg-purple-600 text-white font-medium py-3 px-8 rounded-lg transition-colors">
+                        Hitung Skor
+                    </button>
+                </div>
+            </form>
+
+            <!-- Score Result -->
+            <div v-if="assessmentScore !== null" class="mt-8 p-6 bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Hasil Assessment</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-3xl font-bold text-purple-600 mb-2">{{ assessmentScore }}/100</p>
+                        <p class="text-gray-700 font-medium">{{ getScoreCategory(assessmentScore) }}</p>
+                        <p class="text-sm text-gray-600 mt-2">{{ getScoreDescription(assessmentScore) }}</p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Progress</span>
+                            <span class="text-sm font-medium text-gray-800">{{ assessmentScore }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-3 rounded-full transition-all duration-500" 
+                                 :style="`width: ${assessmentScore}%`"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Values Tab -->
+        <div v-if="currentTab === 'values'" class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Nilai-nilai Pribadi</h2>
+            <div class="mb-6">
+                <p class="text-gray-600 mb-4">Pilih 5 nilai yang paling penting bagi Anda:</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div v-for="value in availableValues" :key="value" 
+                         @click="toggleValue(value)"
+                         :class="selectedValues.includes(value) ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                         class="p-3 rounded-lg cursor-pointer transition-colors text-center">
+                        {{ value }}
+                    </div>
+                </div>
+                <p class="text-sm text-gray-500 mt-2">Dipilih: {{ selectedValues.length }}/5</p>
+            </div>
+
+            <!-- Selected Values Details -->
+            <div v-if="selectedValues.length > 0" class="space-y-4">
+                <h3 class="text-lg font-semibold text-gray-800">Nilai-nilai Terpilih:</h3>
+                <div v-for="(value, index) in selectedValues" :key="value" class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-800 mb-2">{{ index + 1 }}. {{ value }}</h4>
+                    <textarea v-model="valueReflections[value]" 
+                              :placeholder="`Bagaimana Anda menunjukkan nilai '${value}' dalam hidup sehari-hari?`"
+                              class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals Tab -->
+        <div v-if="currentTab === 'goals'" class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Tujuan Self-Respect</h2>
+            <div class="space-y-6">
+                <div v-for="(goal, index) in goals" :key="index" class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Tujuan {{ index + 1 }}</h3>
+                        <button @click="removeGoal(index)" class="text-red-500 hover:text-red-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Kategori</label>
+                            <select v-model="goal.category" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500">
+                                <option>Self-Care</option>
+                                <option>Boundaries</option>
+                                <option>Personal Growth</option>
+                                <option>Relationships</option>
+                                <option>Career</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Target Waktu</label>
+                            <input type="date" v-model="goal.deadline" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Tujuan</label>
+                        <textarea v-model="goal.description" 
+                                  placeholder="Jelaskan tujuan Anda secara spesifik dan terukur..."
+                                  class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500"
+                                  rows="3"></textarea>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Progress (0-100%)</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" v-model="goal.progress" min="0" max="100" class="flex-1">
+                            <span class="text-sm font-medium text-gray-700 w-12">{{ goal.progress }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full transition-all duration-300" 
+                                 :style="`width: ${goal.progress}%`"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button @click="addGoal" class="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-500 hover:text-purple-500 transition-colors">
+                    + Tambah Tujuan Baru
+                </button>
+            </div>
+        </div>
+
+        <!-- Tracking Tab -->
+        <div v-if="currentTab === 'tracking'" class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Tracking Harian</h2>
+            
+            <!-- Daily Input -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Input Hari Ini</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Self-Awareness (1-10)</label>
+                            <input type="range" v-model="dailyTracking.selfAwareness" min="1" max="10" class="w-full">
+                            <div class="text-center text-sm text-gray-600">{{ dailyTracking.selfAwareness }}/10</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Boundaries (1-10)</label>
+                            <input type="range" v-model="dailyTracking.boundaries" min="1" max="10" class="w-full">
+                            <div class="text-center text-sm text-gray-600">{{ dailyTracking.boundaries }}/10</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Self-Care (1-10)</label>
+                            <input type="range" v-model="dailyTracking.selfCare" min="1" max="10" class="w-full">
+                            <div class="text-center text-sm text-gray-600">{{ dailyTracking.selfCare }}/10</div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Positive Self-Talk (1-10)</label>
+                            <input type="range" v-model="dailyTracking.positiveSelfTalk" min="1" max="10" class="w-full">
+                            <div class="text-center text-sm text-gray-600">{{ dailyTracking.positiveSelfTalk }}/10</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Healthy Relationships (1-10)</label>
+                            <input type="range" v-model="dailyTracking.healthyRelationships" min="1" max="10" class="w-full">
+                            <div class="text-center text-sm text-gray-600">{{ dailyTracking.healthyRelationships }}/10</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Catatan Hari Ini</label>
+                            <textarea v-model="dailyTracking.notes" 
+                                      placeholder="Apa yang membuat Anda bangga hari ini?"
+                                      class="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500"
+                                      rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-center">
+                    <button @click="saveDailyTracking" 
+                            class="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-8 rounded-lg transition-colors">
+                        Simpan Tracking Hari Ini
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Chart -->
+            <div v-if="trackingHistory.length > 0" class="mt-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Grafik Perkembangan</h3>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <canvas ref="progressChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Tab -->
+        <div v-if="currentTab === 'report'" class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Laporan Lengkap</h2>
+            
+            <!-- Assessment Summary -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Ringkasan Assessment</h3>
+                <div class="bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg p-6">
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-purple-600">{{ assessmentScore || 0 }}/100</p>
+                            <p class="text-sm text-gray-600">Total Skor</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-blue-600">{{ getScoreCategory(assessmentScore) }}</p>
+                            <p class="text-sm text-gray-600">Kategori</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-green-600">{{ trackingHistory.length }}</p>
+                            <p class="text-sm text-gray-600">Hari Tracking</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Values Summary -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Nilai-nilai Terpilih</h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div v-for="(value, index) in selectedValues" :key="value" class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-medium text-gray-800 mb-2">{{ index + 1 }}. {{ value }}</h4>
+                        <p class="text-sm text-gray-600">{{ valueReflections[value] || 'Belum ada refleksi' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Goals Summary -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Status Tujuan</h3>
+                <div class="space-y-4">
+                    <div v-for="(goal, index) in goals" :key="index" class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-medium text-gray-800">{{ goal.category }}</h4>
+                            <span class="text-sm text-gray-600">{{ goal.deadline }}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-2">{{ goal.description }}</p>
+                        <div class="flex items-center space-x-2">
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full" 
+                                     :style="`width: ${goal.progress}%`"></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700">{{ goal.progress }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracking Summary -->
+            <div v-if="trackingHistory.length > 0" class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Statistik Tracking</h3>
+                <div class="grid md:grid-cols-5 gap-4">
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <p class="text-lg font-bold text-gray-800">{{ getAverageScore('selfAwareness') }}</p>
+                        <p class="text-sm text-gray-600">Rata-rata Self-Awareness</p>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <p class="text-lg font-bold text-gray-800">{{ getAverageScore('boundaries') }}</p>
+                        <p class="text-sm text-gray-600">Rata-rata Boundaries</p>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <p class="text-lg font-bold text-gray-800">{{ getAverageScore('selfCare') }}</p>
+                        <p class="text-sm text-gray-600">Rata-rata Self-Care</p>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <p class="text-lg font-bold text-gray-800">{{ getAverageScore('positiveSelfTalk') }}</p>
+                        <p class="text-sm text-gray-600">Rata-rata Positive Self-Talk</p>
+                    </div>
+                    <div class="text-center p-4 bg-gray-50 rounded-lg">
+                        <p class="text-lg font-bold text-gray-800">{{ getAverageScore('healthyRelationships') }}</p>
+                        <p class="text-sm text-gray-600">Rata-rata Healthy Relationships</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Kit -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Emergency Self-Respect Kit</h3>
+                <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-6">
+                    <p class="text-gray-700 mb-4">Ketika self-respect sedang rendah, lakukan:</p>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div v-for="(item, index) in emergencyKit" :key="index" class="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                            <div class="flex items-center">
+                                <input type="checkbox" :id="`kit-item-${index}`" class="mr-2">
+                                <label :for="`kit-item-${index}`" class="text-sm text-gray-700">{{ item }}</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="flex justify-center space-x-4">
+                <button @click="exportData" 
+                        class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+                    Export Data
+                </button>
+                <button @click="printReport" 
+                        class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+                    Print Laporan
+                </button>
+            </div>
+        </div>
+
+        <!-- Success Messages -->
+        <div v-if="showSuccess" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+            {{ successMessage }}
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, nextTick, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const currentTab = ref('assessment');
+                const assessmentScore = ref(null);
+                const assessmentAnswers = ref(Array(10).fill(null));
+                const assessmentQuestions = ref([
+                    'Saya merasa nyaman dengan diri saya sendiri',
+                    'Saya dapat mengatakan "tidak" ketika diperlukan',
+                    'Saya tidak membiarkan orang lain memperlakukan saya dengan buruk',
+                    'Saya merawat tubuh dan pikiran saya dengan baik',
+                    'Saya menghargai pencapaian saya sendiri',
+                    'Saya tidak membandingkan diri dengan orang lain',
+                    'Saya memaafkan kesalahan saya sendiri',
+                    'Saya memiliki tujuan hidup yang jelas',
+                    'Saya mengelilingi diri dengan orang-orang positif',
+                    'Saya berbicara kepada diri sendiri dengan baik'
+                ]);
+                const selectedValues = ref([]);
+                const availableValues = ref([
+                    'Kejujuran', 'Kasih sayang', 'Keadilan', 'Kreativitas',
+                    'Kebebasan', 'Keamanan', 'Petualangan', 'Keluarga',
+                    'Spiritualitas', 'Kesuksesan', 'Kesetiaan', 'Pembelajaran',
+                    'Kemandirian', 'Tanggung jawab', 'Keberanian', 'Kedamaian',
+                    'Keseimbangan', 'Integritas', 'Kemurahan hati', 'Keunggulan'
+                ]);
+                const valueReflections = ref({});
+                const goals = ref([
+                    {
+                        category: 'Self-Care',
+                        description: '',
+                        deadline: '',
+                        progress: 0
+                    }
+                ]);
+                const dailyTracking = ref({
+                    selfAwareness: 5,
+                    boundaries: 5,
+                    selfCare: 5,
+                    positiveSelfTalk: 5,
+                    healthyRelationships: 5,
+                    notes: ''
+                });
+                const trackingHistory = ref([]);
+                const showSuccess = ref(false);
+                const successMessage = ref('');
+                const progressChart = ref(null);
+                const emergencyKit = ref([
+                    'Baca daftar pencapaian saya',
+                    'Hubungi seseorang yang mendukung',
+                    'Lakukan self-care favorit',
+                    'Baca afirmasi positif',
+                    'Ingat nilai-nilai inti saya',
+                    'Praktek breathing exercise',
+                    'Tulis 3 hal yang disyukuri',
+                    'Lakukan sesuatu yang membuat saya kompeten'
+                ]);
+                
+                const progressChartCanvas = ref(null);
+
+                function calculateScore() {
+                    const validAnswers = assessmentAnswers.value.filter(answer => answer !== null);
+                    if (validAnswers.length === assessmentQuestions.value.length) {
+                        const total = validAnswers.reduce((sum, answer) => sum + parseInt(answer), 0);
+                        assessmentScore.value = Math.round((total / assessmentQuestions.value.length) * 10);
+                        showSuccessMessage('Assessment berhasil dihitung!');
+                    } else {
+                        alert('Harap jawab semua pertanyaan terlebih dahulu.');
+                    }
+                }
+
+                function getScoreCategory(score) {
+                    if (score >= 80) return 'Tinggi';
+                    if (score >= 60) return 'Sedang';
+                    if (score >= 40) return 'Rendah';
+                    return 'Perlu Perhatian';
+                }
+
+                function getScoreDescription(score) {
+                    if (score >= 80) return 'Anda memiliki self-respect yang baik. Pertahankan dan terus kembangkan!';
+                    if (score >= 60) return 'Self-respect Anda cukup baik, namun masih ada ruang untuk perbaikan.';
+                    if (score >= 40) return 'Anda perlu fokus pada pengembangan self-respect.';
+                    return 'Sangat disarankan untuk mulai membangun self-respect secara konsisten.';
+                }
+
+                function toggleValue(value) {
+                    if (selectedValues.value.includes(value)) {
+                        selectedValues.value = selectedValues.value.filter(v => v !== value);
+                        delete valueReflections.value[value];
+                    } else if (selectedValues.value.length < 5) {
+                        selectedValues.value.push(value);
+                        valueReflections.value[value] = '';
+                    }
+                }
+
+                function addGoal() {
+                    goals.value.push({
+                        category: 'Self-Care',
+                        description: '',
+                        deadline: '',
+                        progress: 0
+                    });
+                }
+
+                function removeGoal(index) {
+                    goals.value.splice(index, 1);
+                }
+
+                function showSuccessMessage(message) {
+                    successMessage.value = message;
+                    showSuccess.value = true;
+                    setTimeout(() => {
+                        showSuccess.value = false;
+                    }, 3000);
+                }
+
+                function saveDailyTracking() {
+                    const today = new Date().toISOString().split('T')[0];
+                    const trackingData = {
+                        date: today,
+                        ...dailyTracking.value,
+                        selfAwareness: parseInt(dailyTracking.value.selfAwareness),
+                        boundaries: parseInt(dailyTracking.value.boundaries),
+                        selfCare: parseInt(dailyTracking.value.selfCare),
+                        positiveSelfTalk: parseInt(dailyTracking.value.positiveSelfTalk),
+                        healthyRelationships: parseInt(dailyTracking.value.healthyRelationships)
+                    };
+                    
+                    // Remove existing entry for today if exists
+                    trackingHistory.value = trackingHistory.value.filter(entry => entry.date !== today);
+                    
+                    // Add new entry
+                    trackingHistory.value.push(trackingData);
+                    
+                    // Sort by date
+                    trackingHistory.value.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    
+                    showSuccessMessage('Tracking hari ini berhasil disimpan!');
+                    updateProgressChart();
+                }
+
+                function updateProgressChart() {
+                    nextTick(() => {
+                        if (progressChartCanvas.value && trackingHistory.value.length > 0) {
+                            const ctx = progressChartCanvas.value.getContext('2d');
+                            
+                            // Destroy existing chart
+                            if (progressChart.value) {
+                                progressChart.value.destroy();
+                            }
+                            
+                            const dates = trackingHistory.value.map(entry => entry.date);
+                            const selfAwareness = trackingHistory.value.map(entry => entry.selfAwareness);
+                            const boundaries = trackingHistory.value.map(entry => entry.boundaries);
+                            const selfCare = trackingHistory.value.map(entry => entry.selfCare);
+                            const positiveSelfTalk = trackingHistory.value.map(entry => entry.positiveSelfTalk);
+                            const healthyRelationships = trackingHistory.value.map(entry => entry.healthyRelationships);
+                            
+                            progressChart.value = new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: dates,
+                                    datasets: [
+                                        {
+                                            label: 'Self-Awareness',
+                                            data: selfAwareness,
+                                            borderColor: '#8B5CF6',
+                                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                                            tension: 0.3,
+                                            fill: true
+                                        },
+                                        {
+                                            label: 'Boundaries',
+                                            data: boundaries,
+                                            borderColor: '#EC4899',
+                                            backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                                            tension: 0.3,
+                                            fill: true
+                                        },
+                                        {
+                                            label: 'Self-Care',
+                                            data: selfCare,
+                                            borderColor: '#10B981',
+                                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                            tension: 0.3,
+                                            fill: true
+                                        },
+                                        {
+                                            label: 'Positive Self-Talk',
+                                            data: positiveSelfTalk,
+                                            borderColor: '#3B82F6',
+                                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                            tension: 0.3,
+                                            fill: true
+                                        },
+                                        {
+                                            label: 'Healthy Relationships',
+                                            data: healthyRelationships,
+                                            borderColor: '#F59E0B',
+                                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                            tension: 0.3,
+                                            fill: true
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        legend: {
+                                            position: 'top',
+                                        },
+                                        tooltip: {
+                                            mode: 'index',
+                                            intersect: false,
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            min: 0,
+                                            max: 10,
+                                            ticks: {
+                                                stepSize: 1
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+
+                function getAverageScore(metric) {
+                    if (trackingHistory.value.length === 0) return '0';
+                    const sum = trackingHistory.value.reduce((total, entry) => total + entry[metric], 0);
+                    return (sum / trackingHistory.value.length).toFixed(1);
+                }
+
+                function exportData() {
+                    const data = {
+                        assessmentScore: assessmentScore.value,
+                        assessmentAnswers: assessmentAnswers.value,
+                        selectedValues: selectedValues.value,
+                        valueReflections: valueReflections.value,
+                        goals: goals.value,
+                        trackingHistory: trackingHistory.value
+                    };
+                    
+                    const dataStr = JSON.stringify(data, null, 2);
+                    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                    
+                    const exportFileDefaultName = 'self-respect-data.json';
+                    
+                    const linkElement = document.createElement('a');
+                    linkElement.setAttribute('href', dataUri);
+                    linkElement.setAttribute('download', exportFileDefaultName);
+                    linkElement.click();
+                    
+                    showSuccessMessage('Data berhasil diexport!');
+                }
+
+                function printReport() {
+                    window.print();
+                }
+
+                // Load saved data if exists
+                function loadData() {
+                    const savedData = localStorage.getItem('selfRespectData');
+                    if (savedData) {
+                        const data = JSON.parse(savedData);
+                        assessmentScore.value = data.assessmentScore || null;
+                        assessmentAnswers.value = data.assessmentAnswers || Array(10).fill(null);
+                        selectedValues.value = data.selectedValues || [];
+                        valueReflections.value = data.valueReflections || {};
+                        goals.value = data.goals || [{
+                            category: 'Self-Care',
+                            description: '',
+                            deadline: '',
+                            progress: 0
+                        }];
+                        trackingHistory.value = data.trackingHistory || [];
+                    }
+                }
+
+                // Save data to localStorage
+                function saveData() {
+                    const data = {
+                        assessmentScore: assessmentScore.value,
+                        assessmentAnswers: assessmentAnswers.value,
+                        selectedValues: selectedValues.value,
+                        valueReflections: valueReflections.value,
+                        goals: goals.value,
+                        trackingHistory: trackingHistory.value
+                    };
+                    localStorage.setItem('selfRespectData', JSON.stringify(data));
+                }
+
+                // Auto-save every 30 seconds
+                let saveInterval;
+                onMounted(() => {
+                    loadData();
+                    saveInterval = setInterval(saveData, 30000);
+                    
+                    // Initialize chart if there's history
+                    if (trackingHistory.value.length > 0) {
+                        updateProgressChart();
+                    }
+                });
+
+                return {
+                    currentTab,
+                    assessmentScore,
+                    assessmentAnswers,
+                    assessmentQuestions,
+                    selectedValues,
+                    availableValues,
+                    valueReflections,
+                    goals,
+                    dailyTracking,
+                    trackingHistory,
+                    showSuccess,
+                    successMessage,
+                    progressChart,
+                    emergencyKit,
+                    progressChartCanvas,
+                    calculateScore,
+                    getScoreCategory,
+                    getScoreDescription,
+                    toggleValue,
+                    addGoal,
+                    removeGoal,
+                    saveDailyTracking,
+                    getAverageScore,
+                    exportData,
+                    printReport,
+                    updateProgressChart
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
